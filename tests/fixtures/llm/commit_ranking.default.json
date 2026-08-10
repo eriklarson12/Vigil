@@ -1,0 +1,5 @@
+{
+  "verdicts": [],
+  "likely_culprit_sha": null,
+  "no_culprit_reason": "None of the provided commits plausibly explains this alert based on the available diffs and timing."
+}

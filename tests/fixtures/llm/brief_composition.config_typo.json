@@ -1,0 +1,14 @@
+{
+  "impact_narrative": "Checkout is fully down while pods crash-loop, blocking roughly 1,200 purchase attempts per minute.",
+  "cause_summary": "Commit d4e5f6a7b8 changed db_pool_timeout from 30 to '30s' in config/checkout.yaml; the service parses this value as an int and exits on startup.",
+  "runbook_citation": {
+    "slug": "deploy-config",
+    "heading_path": "Deploy & Config Runbook > CrashLoopBackOff after a config rollout",
+    "why": "Covers rolling back a bad config change and validating YAML before rollout."
+  },
+  "next_steps": [
+    "Revert the config change (db_pool_timeout: 30) and redeploy — one-line fix.",
+    "Verify pods leave CrashLoopBackOff and checkout availability recovers.",
+    "Add schema validation for config/*.yaml in CI."
+  ]
+}

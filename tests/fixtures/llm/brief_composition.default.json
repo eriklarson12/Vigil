@@ -1,0 +1,9 @@
+{
+  "impact_narrative": "Impact is being assessed; see the deterministic figures above.",
+  "cause_summary": "Cause not yet determined from the available commit and runbook evidence; start from the alert description.",
+  "runbook_citation": null,
+  "next_steps": [
+    "Check recent deploys and service logs for the alerted service.",
+    "Review the retrieved runbook excerpts for applicable procedures."
+  ]
+}

@@ -1,0 +1,21 @@
+# The scale-to-zero safety net (ADR-006): every 15 minutes, wake the app and
+# let it reclaim stranded triage runs, generate missing postmortems, and prune
+# the database. The HTTP request itself scales the app from zero.
+# Required repo secrets: RESUME_TOKEN. Required repo variables: APP_URL.
+name: Resume tick
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /internal/resume
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.RESUME_TOKEN }}" \
+            --max-time 120 --retry 2 \
+            "${{ vars.APP_URL }}/internal/resume"

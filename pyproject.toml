@@ -1,0 +1,54 @@
+[project]
+name = "vigil"
+version = "0.1.0"
+description = "Autonomous production outage responder: alert -> bad-commit analysis -> runbook RAG -> impact -> Slack brief -> auto-postmortem"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "langgraph>=0.2.60",
+    "langgraph-checkpoint-postgres>=2.0.10",
+    "google-genai>=1.0",
+    "psycopg[binary,pool]>=3.2",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "httpx>=0.27",
+    "structlog>=24.1",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+vigil-sim = "simulator.cli:app"
+vigil-serve = "vigil.serve:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "asgi-lifespan>=2",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vigil", "simulator"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: needs a running Postgres (docker compose up db)",
+    "retrieval_live: needs committed real embeddings fixture",
+]
+addopts = "-m 'not integration and not retrieval_live'"
+
+[tool.ruff]
+line-length = 110
+src = ["src", "simulator", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

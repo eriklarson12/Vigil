@@ -1,0 +1,17 @@
+{
+  "scenario": "cert_expiry",
+  "alert": {
+    "labels": {
+      "alertname": "TLSHandshakeErrors",
+      "service": "checkout",
+      "severity": "critical",
+      "scenario": "cert_expiry"
+    },
+    "annotations": {
+      "summary": "TLS handshake failures on checkout ingress",
+      "description": "Clients report certificate validation errors: 'certificate has expired'. No recent deploys to checkout."
+    },
+    "fingerprint": "fp-cert-expiry-001"
+  },
+  "deploys": []
+}

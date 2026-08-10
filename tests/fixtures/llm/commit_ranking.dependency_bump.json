@@ -1,0 +1,27 @@
+{
+  "verdicts": [
+    {
+      "sha": "e5f6a7b8c9",
+      "rank": 1,
+      "confidence": 0.78,
+      "rationale": "The lockfile bumps httpx 0.27->0.28 and httpcore 1.0->1.1; the alert describes broken connection pool reuse after an HTTP client upgrade, and the bump deployed 35 minutes before the latency doubled. The orders->inventory calls go through this client.",
+      "suggested_action": "revert"
+    },
+    {
+      "sha": "dddd444455",
+      "rank": 2,
+      "confidence": 0.25,
+      "rationale": "Adds retries to fetch_inventory (services/orders/http_client.py) which could amplify latency under retry storms, but it landed 10h before the regression started.",
+      "suggested_action": "investigate"
+    },
+    {
+      "sha": "eeee555566",
+      "rank": 3,
+      "confidence": 0.02,
+      "rationale": "Test-only change (services/orders/tests/e2e.py); not shipped in the runtime path.",
+      "suggested_action": "investigate"
+    }
+  ],
+  "likely_culprit_sha": "e5f6a7b8c9",
+  "no_culprit_reason": null
+}

@@ -1,0 +1,23 @@
+{
+  "scenario": "config_typo",
+  "alert": {
+    "labels": {
+      "alertname": "CrashLoopBackOff",
+      "service": "checkout",
+      "severity": "critical",
+      "scenario": "config_typo"
+    },
+    "annotations": {
+      "summary": "checkout pods crash-looping after config rollout",
+      "description": "Container exits with 'invalid literal for int(): 30s' while parsing db_pool_timeout from config/checkout.yaml."
+    },
+    "fingerprint": "fp-config-typo-001"
+  },
+  "deploys": [
+    {
+      "service": "checkout",
+      "commit_shas": ["d4e5f6a7b8"],
+      "minutes_before_alert": 25
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+# Service catalog — ground truth for impact estimation and commit path-matching.
+# tier: 0 = revenue-critical … 3 = internal tooling
+services:
+  checkout:
+    tier: 0
+    user_facing: true
+    repo: github.com/OWNER/vigil-demo-shop   # replace OWNER after creating the demo repo
+    path_globs: ["services/checkout/**", "libs/payments/**"]
+    dependencies: [payments-db, inventory, auth]
+    baseline_rpm: 1200
+    owner: "@erik"
+    runbook_tags: [checkout, payments]
+
+  orders:
+    tier: 1
+    user_facing: true
+    repo: github.com/OWNER/vigil-demo-shop
+    path_globs: ["services/orders/**"]
+    dependencies: [payments-db, inventory]
+    baseline_rpm: 450
+    owner: "@erik"
+    runbook_tags: [orders, database]
+
+  inventory:
+    tier: 1
+    user_facing: false
+    repo: github.com/OWNER/vigil-demo-shop
+    path_globs: ["services/inventory/**"]
+    dependencies: [payments-db]
+    baseline_rpm: 900
+    owner: "@erik"
+    runbook_tags: [inventory]
+
+  payments-db:
+    tier: 0
+    user_facing: false
+    repo: github.com/OWNER/vigil-demo-shop
+    path_globs: ["db/**", "services/*/migrations/**"]
+    dependencies: []
+    baseline_rpm: 2000
+    owner: "@erik"
+    runbook_tags: [database]
+
+  auth:
+    tier: 0
+    user_facing: false
+    repo: github.com/OWNER/vigil-demo-shop
+    path_globs: ["services/auth/**"]
+    dependencies: []
+    baseline_rpm: 1500
+    owner: "@erik"
+    runbook_tags: [auth]
+
+shared_globs: ["libs/**", "deploy/**", ".github/**", "config/**"]

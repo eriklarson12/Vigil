@@ -1,0 +1,23 @@
+{
+  "scenario": "dependency_bump",
+  "alert": {
+    "labels": {
+      "alertname": "HighLatency",
+      "service": "orders",
+      "severity": "warning",
+      "scenario": "dependency_bump"
+    },
+    "annotations": {
+      "summary": "Orders p95 latency doubled to 900ms",
+      "description": "Upstream calls from orders to inventory take 2x longer since this morning; connection pool reuse appears broken after an HTTP client upgrade."
+    },
+    "fingerprint": "fp-dependency-bump-001"
+  },
+  "deploys": [
+    {
+      "service": "orders",
+      "commit_shas": ["e5f6a7b8c9"],
+      "minutes_before_alert": 35
+    }
+  ]
+}

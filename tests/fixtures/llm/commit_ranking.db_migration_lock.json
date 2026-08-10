@@ -1,0 +1,20 @@
+{
+  "verdicts": [
+    {
+      "sha": "b2c3d4e5f6",
+      "rank": 1,
+      "confidence": 0.9,
+      "rationale": "0042_add_customer_index.sql runs CREATE INDEX without CONCURRENTLY (line 2 of the diff), which takes an ACCESS EXCLUSIVE-conflicting lock on orders for the duration of the build — exactly the lock the alert reports queries queueing behind. It deployed 40 minutes before the alert.",
+      "suggested_action": "config_fix"
+    },
+    {
+      "sha": "4444dddd55",
+      "rank": 2,
+      "confidence": 0.08,
+      "rationale": "Decimal rounding change in money.py cannot hold table locks or slow unrelated queries.",
+      "suggested_action": "investigate"
+    }
+  ],
+  "likely_culprit_sha": "b2c3d4e5f6",
+  "no_culprit_reason": null
+}

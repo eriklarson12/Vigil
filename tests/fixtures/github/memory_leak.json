@@ -1,0 +1,36 @@
+{
+  "commits": [
+    {
+      "sha": "c3d4e5f6a7",
+      "message": "perf: cache SKU lookups in-process",
+      "author": "dev-a",
+      "hours_before_alert": 30,
+      "files": [{"path": "services/inventory/cache.py", "additions": 85, "deletions": 10}],
+      "patch": "--- services/inventory/cache.py\n@@ -5,10 +5,40 @@\n-_cache = LRUCache(maxsize=10_000)\n+_cache: dict[str, SkuRecord] = {}\n+\n+def get_sku(sku_id: str) -> SkuRecord:\n+    if sku_id not in _cache:\n+        _cache[sku_id] = _load_sku(sku_id)   # unbounded growth\n+    return _cache[sku_id]"
+    },
+    {
+      "sha": "7777aaaa88",
+      "message": "feat: checkout Apple Pay support",
+      "author": "dev-b",
+      "hours_before_alert": 2,
+      "files": [{"path": "services/checkout/applepay.py", "additions": 140, "deletions": 0}],
+      "patch": "--- services/checkout/applepay.py\n@@ +1,140 @@ (new file)"
+    },
+    {
+      "sha": "8888bbbb99",
+      "message": "ci: cache uv downloads",
+      "author": "dev-c",
+      "hours_before_alert": 14,
+      "files": [{"path": ".github/workflows/ci.yml", "additions": 8, "deletions": 1}],
+      "patch": "--- .github/workflows/ci.yml\n@@ ci only @@"
+    },
+    {
+      "sha": "9999cccc00",
+      "message": "docs: architecture notes",
+      "author": "dev-d",
+      "hours_before_alert": 40,
+      "files": [{"path": "docs/arch.md", "additions": 55, "deletions": 0}],
+      "patch": "--- docs/arch.md\n@@ documentation only @@"
+    }
+  ]
+}

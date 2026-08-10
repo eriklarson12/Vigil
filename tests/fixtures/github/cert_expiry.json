@@ -1,0 +1,36 @@
+{
+  "commits": [
+    {
+      "sha": "1212aaaa34",
+      "message": "docs: update onboarding guide",
+      "author": "dev-a",
+      "hours_before_alert": 5,
+      "files": [{"path": "docs/onboarding.md", "additions": 30, "deletions": 4}],
+      "patch": "--- docs/onboarding.md\n@@ documentation only @@"
+    },
+    {
+      "sha": "3434bbbb56",
+      "message": "test: add orders repository tests",
+      "author": "dev-b",
+      "hours_before_alert": 8,
+      "files": [{"path": "services/orders/tests/test_repo.py", "additions": 90, "deletions": 0}],
+      "patch": "--- services/orders/tests/test_repo.py\n@@ tests only @@"
+    },
+    {
+      "sha": "5656cccc78",
+      "message": "feat: inventory reorder threshold",
+      "author": "dev-c",
+      "hours_before_alert": 22,
+      "files": [{"path": "services/inventory/reorder.py", "additions": 45, "deletions": 3}],
+      "patch": "--- services/inventory/reorder.py\n@@ inventory logic @@"
+    },
+    {
+      "sha": "7878dddd90",
+      "message": "chore: tidy gitignore",
+      "author": "dev-d",
+      "hours_before_alert": 40,
+      "files": [{"path": ".gitignore", "additions": 2, "deletions": 0}],
+      "patch": "--- .gitignore\n@@ +2 lines @@"
+    }
+  ]
+}

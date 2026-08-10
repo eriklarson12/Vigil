@@ -1,0 +1,17 @@
+{
+  "scenario": "memory_leak",
+  "alert": {
+    "labels": {
+      "alertname": "HighMemory",
+      "service": "inventory",
+      "severity": "warning",
+      "scenario": "memory_leak"
+    },
+    "annotations": {
+      "summary": "Inventory pods above 90% memory, restarting every ~6h",
+      "description": "RSS grows linearly since yesterday's release; OOMKilled twice overnight. Heap dominated by SKU lookup cache entries."
+    },
+    "fingerprint": "fp-memory-leak-001"
+  },
+  "deploys": []
+}

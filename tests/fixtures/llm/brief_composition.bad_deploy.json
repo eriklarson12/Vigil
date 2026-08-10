@@ -1,0 +1,14 @@
+{
+  "impact_narrative": "Checkout errors are likely blocking roughly 1,200 purchase attempts per minute while the error rate stays at 8%.",
+  "cause_summary": "Commit a1b2c3d4e5 removed payment-intent state validation from confirm_payment and shipped in the deploy 20 minutes before the alert; unvalidated intents now fail at the gateway with 'payment intent state invalid'.",
+  "runbook_citation": {
+    "slug": "checkout-service",
+    "heading_path": "Checkout Service Runbook > High error rate after a deploy",
+    "why": "Covers rollback of a bad checkout deploy, which matches the suspected cause."
+  },
+  "next_steps": [
+    "Roll back the checkout deploy containing a1b2c3d4e5 (runbook section has the exact command).",
+    "Confirm 5xx rate returns to baseline (<0.5%) on the checkout dashboard.",
+    "Re-land the refactor with the middleware validation actually enabled."
+  ]
+}
