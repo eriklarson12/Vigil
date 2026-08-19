@@ -1,0 +1,24 @@
+[
+  {
+    "id": "a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
+    "service": "checkout",
+    "title": "TLSHandshakeErrors on checkout",
+    "severity": "SEV1",
+    "status": "postmortem_done",
+    "slack_message_ts": "mock-a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
+    "created_at": "2026-08-19 22:16:48.467411+00:00",
+    "resolved_at": "2026-08-19 22:16:50.506698+00:00",
+    "has_postmortem": true
+  },
+  {
+    "id": "62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
+    "service": "checkout",
+    "title": "HighErrorRate on checkout",
+    "severity": "SEV1",
+    "status": "postmortem_done",
+    "slack_message_ts": "mock-62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
+    "created_at": "2026-08-19 22:15:47.137894+00:00",
+    "resolved_at": "2026-08-19 22:15:49.182361+00:00",
+    "has_postmortem": true
+  }
+]

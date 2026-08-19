@@ -39,7 +39,27 @@ docker compose up -d db
 uv sync
 uv run vigil-serve                              # terminal 1
 uv run vigil-sim demo --scenario bad_deploy     # terminal 2 — full incident in ~15s
+cd frontend && npm install && npm run dev       # terminal 3 — dashboard on :5173
 ```
+
+## Dashboard
+
+A read-only React view over the same two API endpoints Vigil already served
+([`frontend/`](frontend/), Vite + React + TypeScript + Tailwind):
+
+- **Incident list** — severity, service, status, duration, postmortem indicator; polls every 10s.
+- **Commit candidates** — the differentiator. Every candidate's `feature_scores` renders as a
+  stacked contribution bar on a shared 0–1 scale, so you can see *why* one commit outranked the
+  rest: recency vs path match vs risky files vs diff size vs message signals vs deploy window.
+  Expanding a row shows the raw numbers, the LLM's rationale, and the changed files. Candidates
+  that failed the relevance gate are marked `gated ×0.3`.
+- **Slack brief** — the exact Block Kit payload that was posted, rendered in the browser.
+- **Postmortem** — the generated markdown.
+
+Try `--scenario cert_expiry` to see the honest "no likely culprit identified" state.
+
+> v1 is read-only and unauthenticated by design — the data is synthetic. Add auth before
+> pointing it at anything real.
 
 ## Demo scenarios
 
@@ -73,8 +93,9 @@ GitHub Actions free minutes · Slack free workspace · Vercel free tier.
 ## Testing
 
 ```bash
-uv run pytest                   # 65 unit tests: golden scoring values, chunker, severity rubric…
+uv run pytest                   # 69 unit tests: golden scoring values, chunker, severity rubric…
 uv run pytest -m integration    # full pipeline vs real Postgres + fixture LLM, exactly-once checks
+cd frontend && npm run test     # score-bar math and formatters (Vitest)
 ```
 
 The commit scorer has golden tests with hand-computed expected values, and every scenario's

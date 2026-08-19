@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sev1: #E01E5A;
+  --color-sev2: #F2A33C;
+  --color-sev3: #ECB22E;
+  --color-sev4: #CCCCCC;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-200 antialiased;
+}
+
+/* Tailwind's preflight strips heading and list styling, so the markdown coming
+   out of the postmortem generator needs its own typography scale. */
+.postmortem > * + * {
+  margin-top: 0.75rem;
+}
+
+.postmortem h1 {
+  @apply text-lg font-semibold text-slate-100;
+}
+
+.postmortem h2 {
+  @apply mt-5 border-b border-slate-800 pb-1 text-sm font-semibold uppercase tracking-wider text-slate-400;
+}
+
+.postmortem h3 {
+  @apply text-sm font-semibold text-slate-200;
+}
+
+.postmortem ul {
+  @apply list-disc space-y-1 pl-5;
+}
+
+.postmortem ol {
+  @apply list-decimal space-y-1 pl-5;
+}
+
+.postmortem strong {
+  @apply font-semibold text-slate-100;
+}
+
+.postmortem code {
+  @apply rounded bg-slate-800 px-1 font-mono text-xs text-sky-300;
+}
+
+.postmortem a {
+  @apply text-sky-400 underline decoration-sky-700 underline-offset-2;
+}
+
+.postmortem hr {
+  @apply border-slate-800;
+}
+
+.postmortem blockquote {
+  @apply border-l-2 border-slate-700 pl-3 text-slate-400 italic;
+}
+
+.postmortem table {
+  @apply w-full border-collapse text-xs;
+}
+
+.postmortem th {
+  @apply border-b border-slate-700 py-1.5 pr-4 text-left font-medium text-slate-400;
+}
+
+.postmortem td {
+  @apply border-b border-slate-800/60 py-1.5 pr-4 align-top text-slate-300;
+}
