@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://vigil:vigil@localhost:5433/vigil"
 
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
-    gemini_fallback_model: str = "gemini-2.5-flash-lite"
+    gemini_model: str = "gemini-3.6-flash"
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"
     llm_mode: str = "auto"  # auto | gemini | fake
     llm_daily_budget: int = 200
     embedding_model: str = "gemini-embedding-001"
