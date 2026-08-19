@@ -41,8 +41,8 @@ async def get_incident(incident_id: str, request: Request) -> dict[str, Any]:
             )
             events = await cur.fetchall()
             await cur.execute(
-                "SELECT sha, message, author, committed_at, heuristic_score, feature_scores,"
-                " llm_rank, llm_confidence, llm_rationale FROM commit_candidates"
+                "SELECT sha, message, author, committed_at, files, heuristic_score,"
+                " feature_scores, llm_rank, llm_confidence, llm_rationale FROM commit_candidates"
                 " WHERE incident_id = %s ORDER BY heuristic_score DESC",
                 (incident_id,),
             )

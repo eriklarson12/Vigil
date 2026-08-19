@@ -1,11 +1,14 @@
 """Slack delivery (spec §9, §15).
 
-SLACK_MODE=mock    -> write payload to incident_events (console + dashboard render);
-                      fabricates a ts so threading logic is exercised.
+SLACK_MODE=mock    -> console only; fabricates a ts so threading logic is exercised.
 SLACK_MODE=webhook -> Incoming Webhook. NOTE: incoming webhooks return no message
                       ts, so the postmortem posts as a separate message. Provide
                       SLACK_BOT_TOKEN to use chat.postMessage instead, which
                       returns ts and enables real threaded postmortems.
+
+Every mode records the Block Kit payload on the incident_events row so the
+dashboard's brief panel renders identically in all three. Oversized payloads are
+truncated by add_event's 8 KB cap (spec §11).
 """
 
 from typing import Any
@@ -34,10 +37,14 @@ class SlackSender:
             return f"mock-{incident_id}"
         if self._settings.slack_bot_token:
             ts = await self._post_api(payload)
-            await add_event(self._pool, incident_id, "brief_posted", {"ts": ts})
+            await add_event(
+                self._pool, incident_id, "brief_posted", {"ts": ts, "slack_payload": payload}
+            )
             return ts
         await self._post_webhook(payload)
-        await add_event(self._pool, incident_id, "brief_posted", {"via": "webhook"})
+        await add_event(
+            self._pool, incident_id, "brief_posted", {"via": "webhook", "slack_payload": payload}
+        )
         return f"webhook-{incident_id}"
 
     async def post_thread(self, incident_id: str, thread_ts: str, payload: dict[str, Any]) -> None:
@@ -50,7 +57,7 @@ class SlackSender:
             await self._post_api(payload, thread_ts=thread_ts)
         else:
             await self._post_webhook(payload)  # no threading without a bot token
-        await add_event(self._pool, incident_id, "postmortem_posted", {})
+        await add_event(self._pool, incident_id, "postmortem_posted", {"slack_payload": payload})
 
     async def _post_webhook(self, payload: dict[str, Any]) -> None:
         async with httpx.AsyncClient(timeout=10.0) as client:

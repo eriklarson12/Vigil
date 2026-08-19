@@ -16,6 +16,14 @@ os.environ["GITHUB_MODE"] = "fixture"
 os.environ["LLM_MODE"] = "fake"
 os.environ["EMBEDDINGS_MODE"] = "fake"
 os.environ["SLACK_MODE"] = "mock"
+# Pin the credentials too, not just the modes: Settings() falls back to the
+# developer's .env, which on a configured box holds a live Slack bot token and
+# the production webhook tokens. Tests must never inherit either.
+os.environ["SLACK_BOT_TOKEN"] = ""
+os.environ["SLACK_WEBHOOK_URL"] = ""
+os.environ["GEMINI_API_KEY"] = ""
+os.environ["ALERTMANAGER_WEBHOOK_TOKEN"] = "dev-token"
+os.environ["RESUME_TOKEN"] = "dev-token"
 os.environ["GITHUB_FIXTURES_DIR"] = str(ROOT / "tests" / "fixtures" / "github")
 os.environ["LLM_FIXTURES_DIR"] = str(ROOT / "tests" / "fixtures" / "llm")
 os.environ["SERVICES_FILE"] = str(ROOT / "services.yaml")
