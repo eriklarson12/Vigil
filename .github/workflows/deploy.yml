@@ -1,4 +1,4 @@
-# Build the image in ACR and roll it out to Azure Container Apps.
+# Build the image on the runner, push to ACR, and roll it out to Azure Container Apps.
 # Auth is OIDC (federated credential) — no long-lived Azure secrets in the repo.
 # Required repo secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 # Required repo variables: ACR_NAME, ACA_APP, ACA_RG
@@ -24,10 +24,15 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Build in ACR
+      - name: Log in to ACR
+        run: az acr login --name ${{ vars.ACR_NAME }}
+      - name: Build and push image
         run: |
-          az acr build --registry ${{ vars.ACR_NAME }} \
-            --image vigil:${{ github.sha }} --image vigil:latest .
+          docker build --platform linux/amd64 \
+            -t ${{ vars.ACR_NAME }}.azurecr.io/vigil:${{ github.sha }} \
+            -t ${{ vars.ACR_NAME }}.azurecr.io/vigil:latest .
+          docker push ${{ vars.ACR_NAME }}.azurecr.io/vigil:${{ github.sha }}
+          docker push ${{ vars.ACR_NAME }}.azurecr.io/vigil:latest
       - name: Update Container App
         run: |
           az containerapp update \
