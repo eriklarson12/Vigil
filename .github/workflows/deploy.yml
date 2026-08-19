@@ -25,7 +25,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Log in to ACR
-        run: az acr login --name ${{ vars.ACR_NAME }}
+        run: |
+          ACR_TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
+          echo "$ACR_TOKEN" | docker login ${{ vars.ACR_NAME }}.azurecr.io \
+            --username 00000000-0000-0000-0000-000000000000 --password-stdin
       - name: Build and push image
         run: |
           docker build --platform linux/amd64 \
