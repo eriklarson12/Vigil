@@ -1,65 +1,130 @@
-# Vigil 🚨
+<div align="center">
 
-**An autonomous incident responder.** The moment a production alert fires, Vigil identifies the
-likely bad commit from git history, retrieves the relevant runbook with hybrid RAG, estimates
-user impact, and posts a structured brief to the on-call Slack channel — in under a minute. When
-you mark the incident resolved, it writes the blameless postmortem.
+# Vigil
 
-*Demo GIF coming with the dashboard milestone — can run the 2-minute demo below.*
+**An autonomous incident responder: production alert to Slack brief in under a minute.**
+
+[![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
+[![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
+[![Tests](https://img.shields.io/badge/tests-121%20passing-34D399)](#development--testing)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+
+[**Live dashboard →**](https://vigil-silk-nine.vercel.app) · [API health](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz)
+
+</div>
+
+---
+
+An Alertmanager webhook fires and Vigil takes over: it scores every recent commit against the failing service, retrieves the matching runbook with hybrid RAG, classifies severity and blast radius from a service catalog, and posts a structured Block Kit brief to the on-call channel. Mark the incident resolved, in Slack or over the API, and it writes the blameless postmortem from the recorded timeline.
+
+The whole thing runs on free tiers at $0/month: Gemini free tier, Neon Postgres, Azure Container Apps with scale-to-zero, GitHub Actions, Vercel. Clone it and the full pipeline runs offline with no API keys at all.
+
+<!-- Screenshot: dashboard incident detail with the commit-candidate contribution bars. Add as assets/dashboard.png (width 900, alt text describing the panel). -->
+
+## Table of Contents
+
+- [The problem](#the-problem)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Demo scenarios](#demo-scenarios)
+- [Dashboard](#dashboard)
+- [Configuration](#configuration)
+- [Development & Testing](#development--testing)
+- [API Reference](#api-reference)
+- [Retrieval quality](#retrieval-quality)
+- [Engineering Highlights](#engineering-highlights)
+- [Deployment](#deployment)
+- [Limitations](#limitations)
 
 ## The problem
 
-The first ten minutes of an incident are spent gathering context: what changed, who owns this,
-where's the runbook, how bad is it. Vigil does that gathering in seconds, so on-call starts at
-the "act" step instead of the "search" step.
+The first ten minutes of an incident go to gathering context: what changed, who owns this, where is the runbook, how bad is it. Vigil does that gathering in seconds, so on-call starts at the "act" step instead of the "search" step.
+
+## Features
+
+- **Bad-commit identification:** deterministic scoring ranks every commit in the lookback window on six features (recency, path match, risky files, diff size, message signals, deploy correlation) before the LLM sees anything
+- **Runbook retrieval:** pgvector cosine similarity and Postgres full-text search, fused with reciprocal rank fusion and boosted when the runbook is tagged for the failing service
+- **Deterministic severity:** SEV1 through SEV4 come from a rules table over the service catalog (tier, user-facing, dependency fan-out) plus a BFS blast radius, never from the model
+- **Slack brief:** Block Kit message with severity, culprit commit and confidence, runbook excerpt, affected services, and a "Mark resolved" button
+- **Automatic postmortem:** resolution starts a second graph that gathers the incident timeline and posts a blameless postmortem in the brief's thread
+- **Incident dashboard:** read-only React view of every incident, including the per-feature breakdown of why one commit outranked the rest
+- **Incident simulator:** `vigil-sim` fires Alertmanager-format alerts for six scenarios with planted culprits, entirely offline
+- **Exactly-once resumability:** LangGraph checkpoints live in Postgres, so a container killed mid-triage resumes without duplicate LLM spend
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| API | Python 3.12, FastAPI, Pydantic v2, psycopg 3, structlog |
+| Orchestration | LangGraph with the Postgres checkpointer |
+| AI | Gemini (`google-genai`) for commit ranking, brief, and postmortem; `gemini-embedding-001` at 768 dims for retrieval |
+| Data | Neon Postgres with pgvector: state, work queue, vectors, checkpoints, budget |
+| Dashboard | React 19, TypeScript, Vite, Tailwind CSS v4 |
+| Integrations | Alertmanager webhooks, Slack Block Kit and interactions, GitHub REST |
+| Testing | pytest, ruff, Vitest, oxlint |
+| Infrastructure | Azure Container Apps (scale-to-zero), Vercel, GitHub Actions |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     AM[Alertmanager / vigil-sim] -->|webhook| API
-    subgraph ACA[Azure Container Apps — scale-to-zero]
+    subgraph ACA[Azure Container Apps: scale-to-zero]
         API[FastAPI · LangGraph pipeline]
     end
     API <-->|state · queue · vectors · checkpoints| PG[(Neon Postgres + pgvector)]
-    API -->|≤3 calls/incident| GEM[Gemini free tier]
+    API -->|3 calls max per incident| GEM[Gemini free tier]
     API --> GH[GitHub REST API]
     API <--> SLACK[Slack]
-    TICK[GitHub Actions cron 15m] -->|wakes app| API
+    DASH[React dashboard on Vercel] -->|REST| API
+    TICK[GitHub Actions cron, 15 min] -->|wakes app| API
 ```
 
-Every inbound signal is HTTP; every piece of state lives in Postgres. The container is killed
-routinely (scale-to-zero) and an in-flight incident **resumes from its LangGraph checkpoint** —
-exactly once, no duplicate LLM spend. Details: [`docs/architecture.md`](docs/architecture.md).
+Every inbound signal is an HTTP request and every piece of state lives in Postgres. The container is killed routinely by scale-to-zero, and an in-flight incident resumes from its LangGraph checkpoint exactly once, with no duplicate LLM spend.
 
-## Quickstart (offline — no API keys needed)
+Triage runs the three expensive lookups in parallel and joins them into a single brief call:
+
+```
+START → load_context ─┬→ fetch_commits → score_commits → rank_commits_llm ─┐
+                      ├→ retrieve_runbooks ────────────────────────────────┤
+                      └→ estimate_impact ──────────────────────────────────┤
+                                                     compose_brief (join) ←┘
+                                                     → post_slack → finalize → END
+```
+
+## Getting Started
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) for the local pgvector Postgres
+- Python 3.12+ and [uv](https://docs.astral.sh/uv/)
+- Node.js 22+ (dashboard only)
+- No API keys. The defaults run fully offline: `LLM_MODE=auto` falls back to recorded fixtures, `GITHUB_MODE=fixture` replays commit history, `SLACK_MODE=mock` prints the brief instead of posting it.
+
+### Installation
 
 ```bash
-docker compose up -d db
+git clone https://github.com/eriklarson12/Vigil.git
+cd Vigil
+cp .env.example .env
+docker compose up -d db     # pgvector Postgres on localhost:5433
 uv sync
-uv run vigil-serve                              # terminal 1
-uv run vigil-sim demo --scenario bad_deploy     # terminal 2 — full incident in ~15s
-cd frontend && npm install && npm run dev       # terminal 3 — dashboard on :5173
 ```
 
-## Dashboard
+### Usage
 
-A read-only React view over the same two API endpoints Vigil already served
-([`frontend/`](frontend/), Vite + React + TypeScript + Tailwind):
+```bash
+uv run vigil-serve                              # terminal 1: API on :8000
+uv run vigil-sim demo --scenario bad_deploy     # terminal 2: full incident in ~15s
+cd frontend && npm install && npm run dev       # terminal 3: dashboard on :5173
+```
 
-- **Incident list** — severity, service, status, duration, postmortem indicator; polls every 10s.
-- **Commit candidates** — the differentiator. Every candidate's `feature_scores` renders as a
-  stacked contribution bar on a shared 0–1 scale, so you can see *why* one commit outranked the
-  rest: recency vs path match vs risky files vs diff size vs message signals vs deploy window.
-  Expanding a row shows the raw numbers, the LLM's rationale, and the changed files. Candidates
-  that failed the relevance gate are marked `gated ×0.3`.
-- **Slack brief** — the exact Block Kit payload that was posted, rendered in the browser.
-- **Postmortem** — the generated markdown.
+The demo seeds and embeds the runbooks, plants the scenario's deploy events, fires the alert, waits for the brief, resolves the incident, and prints the generated postmortem. Open <http://localhost:5173> to see the same incident in the dashboard.
 
-Try `--scenario cert_expiry` to see the honest "no likely culprit identified" state.
-
-> v1 is read-only and unauthenticated by design — the data is synthetic. Add auth before
-> pointing it at anything real.
+`make demo` runs the same thing, and `make test-all` runs every test suite against the local database.
 
 ## Demo scenarios
 
@@ -67,50 +132,130 @@ Try `--scenario cert_expiry` to see the honest "no likely culprit identified" st
 |---|---|---|---|
 | `bad_deploy` | HighErrorRate | validation removed in a refactor | deploy correlation |
 | `db_migration_lock` | SlowQueries | non-CONCURRENT index build | risky-file scoring |
-| `memory_leak` | HighMemory | unbounded cache, 30h old | time-decay vs path-match |
+| `memory_leak` | HighMemory | unbounded cache, 30h old | time decay vs path match |
 | `config_typo` | CrashLoopBackOff | one-character YAML change | tiny-diff risk weighting |
 | `dependency_bump` | HighLatency | lockfile bump | dependency heuristics |
-| `cert_expiry` | TLSHandshakeErrors | **none exists** | honest "no culprit found" |
+| `cert_expiry` | TLSHandshakeErrors | **none exists** | the honest "no culprit found" path |
 
-## Design decisions (the interview-bait, with receipts)
+## Dashboard
 
-- **≤3 LLM calls per incident** — deterministic pre-scoring ranks commits *before* the LLM sees
-  anything; severity is a rules table; re-ranking is folded into the brief call. ([ADR-007](docs/decisions.md))
-- **Postgres as the queue** — `FOR UPDATE SKIP LOCKED` + stale-claim reclaim beats Kafka at
-  dozens-of-alerts-a-day scale. ([ADR-003](docs/decisions.md))
-- **Hybrid retrieval** — pgvector cosine + full-text search fused with RRF; runbooks are full of
-  exact identifiers where lexical wins. ([ADR-004](docs/decisions.md))
-- **Scale-to-zero + checkpoint resumability** — a cron-driven `/internal/resume` wakes the app,
-  resumes stranded graphs, and prunes the DB. ([ADR-006](docs/decisions.md))
-- **The brief always posts** — every pipeline node degrades gracefully; if all LLM calls fail,
-  a deterministic Block Kit brief ships from the heuristics alone.
+A read-only React view over the same two endpoints the API already served ([`frontend/`](frontend/)):
 
-## Cost: $0/month
+- **Incident list:** severity, service, status, duration, and postmortem indicator, polled every 10 seconds
+- **Commit candidates:** every candidate's feature scores render as a stacked contribution bar on a shared 0 to 1 scale, so you can see *why* one commit outranked the rest; expanding a row shows the raw numbers, the model's rationale, and the changed files, and candidates that failed the relevance gate are marked `gated ×0.3`
+- **Slack brief:** the exact Block Kit payload that was posted, rendered in the browser
+- **Postmortem:** the generated markdown
 
-Gemini free tier (no card) · Neon free tier (no card) · Azure Container Apps free grant ·
-GitHub Actions free minutes · Slack free workspace · Vercel free tier.
+Try `--scenario cert_expiry` to see the state where nothing scores above the floor and Vigil says so instead of guessing.
 
-## Testing
+## Configuration
+
+### Backend (`.env`)
+
+| Variable | Required | Description |
+|---|:--:|---|
+| `DATABASE_URL` | ✅ | Postgres with pgvector. Local default is `postgresql://vigil:vigil@localhost:5433/vigil`; production uses the Neon pooled URL |
+| `ALERTMANAGER_WEBHOOK_TOKEN` | ✅ | Bearer token for `POST /webhooks/alertmanager` |
+| `RESUME_TOKEN` | ✅ | Bearer token for the operator endpoints (resume tick, manual resolve) |
+| `GEMINI_API_KEY` | | From [AI Studio](https://aistudio.google.com/apikey), free and no card. Leave empty to run on fixtures |
+| `LLM_MODE` | | `auto` (default), `gemini`, or `fake` |
+| `GEMINI_MODEL` | | Generation model (default `gemini-3.6-flash`) |
+| `GEMINI_FALLBACK_MODEL` | | Used when the primary model's quota is exhausted (default `gemini-3.5-flash-lite`) |
+| `LLM_DAILY_BUDGET` | | Generation calls per day, hard stop (default `200`) |
+| `EMBEDDING_MODEL` | | Embedding model (default `gemini-embedding-001`) |
+| `EMBEDDING_DIMS` | | Matryoshka truncation width, L2-normalized in code (default `768`) |
+| `EMBEDDINGS_MODE` | | `auto` (default), `gemini`, or `fake` (deterministic hash vectors) |
+| `GITHUB_MODE` | | `fixture` (default, offline) or `live` |
+| `GITHUB_TOKEN` | | Fine-grained read-only PAT, only for `GITHUB_MODE=live` |
+| `SLACK_MODE` | | `mock` (default, console plus dashboard) or `webhook` |
+| `SLACK_WEBHOOK_URL` | | Incoming webhook, required when `SLACK_MODE=webhook` |
+| `SLACK_BOT_TOKEN` | | Enables `chat.postMessage` and threaded postmortems |
+| `SLACK_CHANNEL` | | Target channel for the bot token (default `#incidents`) |
+| `SLACK_SIGNING_SECRET` | | Verifies the "Mark resolved" button's requests |
+| `DASHBOARD_URL` | | CORS allowlist entry and the target of the brief's Dashboard button |
+| `SERVICES_FILE` | | Service catalog path (default `services.yaml`) |
+| `COMMIT_LOOKBACK_HOURS` | | Commit window scored per incident (default `48`) |
+
+### Dashboard (`frontend/.env.local`)
+
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | API base URL, e.g. `http://localhost:8000`. Build-time, so changing it needs a redeploy |
+
+## Development & Testing
 
 ```bash
-uv run pytest                   # 69 unit tests: golden scoring values, chunker, severity rubric…
-uv run pytest -m integration    # full pipeline vs real Postgres + fixture LLM, exactly-once checks
-uv run pytest -m retrieval_live # retrieval quality vs recorded real embeddings
-cd frontend && npm run test     # score-bar math and formatters (Vitest)
+# Backend: 70 unit tests, plus suites that need the database container
+uv run pytest                     # unit only, no services
+uv run pytest -m integration      # 2 full-pipeline tests against real Postgres
+uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
+uv run ruff check .
+
+# Dashboard: 45 tests
+cd frontend
+npm run test -- --run
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-The commit scorer has golden tests with hand-computed expected values, and every scenario's
-planted culprit must rank #1 (`cert_expiry` must rank *nothing*). LLM fixtures are validated
-through the real Pydantic schemas, so schema drift fails CI loudly.
+GitHub Actions runs all of it on every push and pull request, with no API key and no live model calls anywhere.
 
-Retrieval quality is regression-tested too: real Gemini embeddings for the runbook chunks and
-the six scenario queries were recorded once and committed, so CI measures hit@3 and rank@1 of
-the correct runbook with no API key and no live calls.
+The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first while `cert_expiry` must rank nothing above the score floor. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly.
 
-## Deploying
+## API Reference
 
-TODO
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/webhooks/alertmanager` | Alertmanager v4 payload: validate, fingerprint, group, enqueue (bearer token) |
+| `POST` | `/slack/interactions` | Slack "Mark resolved" button, signature-verified |
+| `GET` | `/api/incidents` | Incident list for the dashboard |
+| `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
+| `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
+| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, prune (bearer token) |
+| `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 
-## Roadmap
+## Retrieval quality
 
-TODO
+Runbook retrieval is regression-tested against real embeddings without spending a single API call. One live Gemini run recorded the vectors for every runbook chunk and every scenario query; those vectors are committed, so CI replays them and measures retrieval itself rather than the SQL plumbing around it.
+
+Two gates run at the production fetch depth: `hit@3` (the right runbook reaches the brief at all) must be at least 5 of 6, and `rank@1` (it reaches the brief first) at least 4 of 6. `rank@1` exists because `hit@3` alone is blind to the failure actually observed in production, where an unrelated runbook outranked the right one while both sat in the top 3.
+
+| Metric | Gate | Current |
+|---|---|---|
+| `hit@3` | 5/6 | **6/6** |
+| `rank@1` | 4/6 | **6/6** |
+
+Reproduce with `docker compose up -d db && uv run pytest -m retrieval_live -s`, which prints the ranked runbooks per scenario.
+
+## Engineering Highlights
+
+- **Three LLM calls per incident, maximum.** Deterministic pre-scoring ranks commits before the model sees anything, severity comes from a rules table, and re-ranking is folded into the brief call. What remains is ranking, brief, and postmortem, which keeps an alert storm inside a free tier instead of on top of it.
+- **The brief always posts.** Every pipeline node degrades on its own: no commits found, retrieval empty, model unavailable, daily budget exhausted. If all three LLM calls fail, a deterministic Block Kit brief ships from the heuristics alone, because a brief with gaps beats silence at 3am.
+- **Postgres is the queue.** `FOR UPDATE SKIP LOCKED` with a stale-claim reclaim after 10 minutes handles dozens of alerts a day without Kafka, Celery, or Redis. The same database holds vectors, checkpoints, and the LLM budget, so the entire system is one managed dependency.
+- **Scale-to-zero survives mid-incident death.** A GitHub Actions cron POSTs `/internal/resume` every 15 minutes; the request itself wakes the container, and the tick reclaims stranded triage runs, resumes checkpointed graphs, generates missing postmortems, and prunes old rows to stay inside the 0.5 GB free tier.
+- **Hybrid retrieval, because runbooks are full of identifiers.** Runbook text is dense with exact strings such as service names, error codes, and table names, where lexical search beats embeddings. Vector and full-text results are fused with RRF and boosted when the runbook is tagged for the failing service.
+- **A relevance gate that admits ignorance.** A commit touching none of the service's paths and landing in no deploy window is multiplied by 0.3, and nothing below the score floor is offered as a culprit. The `cert_expiry` scenario exists to prove the pipeline reports "no likely culprit identified" instead of promoting the highest-scoring irrelevant commit.
+
+## Deployment
+
+Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz), with the dashboard on Vercel at [vigil-silk-nine.vercel.app](https://vigil-silk-nine.vercel.app).
+
+- **API → Azure Container Apps**, scale-to-zero with a maximum of one replica. GitHub Actions builds the image, pushes to ACR, and rolls it out; authentication is OIDC through a federated credential, so no long-lived Azure secrets are stored in the repo.
+- **Database → Neon**, free tier with pgvector. Migrations apply on app startup.
+- **Dashboard → Vercel**, root directory `frontend/`, with `VITE_API_URL` pointed at the container app.
+- Set `DASHBOARD_URL` on the API to the Vercel origin: it is both the CORS allowlist entry and the target of the brief's Dashboard button.
+- A scheduled workflow POSTs `/internal/resume` every 15 minutes, which is what makes scale-to-zero safe.
+
+## Limitations
+
+- **The demo data is synthetic.** Alerts come from `vigil-sim` and commit history is replayed from fixtures, so the deployed incidents are reproducible rather than real. Live GitHub mode needs a public repo with matching planted commits.
+- **The dashboard is read-only and unauthenticated.** That is deliberate for synthetic data. Add authentication before pointing it at anything real; the state-changing endpoints already require a bearer token.
+- **Free-tier quotas are a hard ceiling.** A Postgres-backed daily budget stops generation calls at `LLM_DAILY_BUDGET`, and Vigil falls back to the lighter model and then to the deterministic brief rather than queueing spend.
+- **The first request after idle is slow.** Scale-to-zero plus a Neon cold start means a few seconds on the first hit, which is the cost of the $0 budget.
+- **One replica.** The `SKIP LOCKED` queue is built for more, but the free grant is not, so throughput is bounded by a single container.
+- **Storage is pruned, not archived.** The Neon free tier is 0.5 GB, so the resume tick trims old incidents and checkpoints on a schedule.
+
+---
+
+Built by [Erik Larson](https://github.com/eriklarson12). The incidents in the live demo are simulated; no production system is being watched.
