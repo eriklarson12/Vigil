@@ -85,6 +85,21 @@ export function percent(value: number | null | undefined, digits = 0): string {
   return `${(value * 100).toFixed(digits)}%`
 }
 
+/**
+ * Only http(s) links are rendered as links. Brief text is partly LLM-written and
+ * the LLM reads commit messages, so a crafted message is a path to a
+ * `javascript:` href on the page.
+ */
+export function safeUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  try {
+    const parsed = new URL(url, 'https://invalid.example')
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? url : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export interface MrkdwnNode {
   type: 'text' | 'bold' | 'italic' | 'code' | 'link'
   text: string

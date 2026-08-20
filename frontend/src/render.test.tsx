@@ -103,3 +103,29 @@ describe('incident list data', () => {
     }
   })
 })
+
+describe('brief link hardening', () => {
+  const payloadWith = (text: string): SlackBriefPayload => ({
+    text: 'x',
+    attachments: [{ color: '#E01E5A', blocks: [{ type: 'section', text: { type: 'mrkdwn', text } }] }],
+  })
+
+  it('renders a javascript: link as inert text, keeping the label', () => {
+    const html = render(
+      <Brief payload={payloadWith('see <javascript:alert(1)|the commit>')} postedWithoutPayload={false} />,
+    )
+    expect(html).toContain('the commit')
+    expect(html).not.toContain('javascript:')
+    expect(html).not.toContain('<a ')
+  })
+
+  it('still links an ordinary commit url', () => {
+    const html = render(
+      <Brief
+        payload={payloadWith('see <https://github.com/o/r/commit/abc|`abc`>')}
+        postedWithoutPayload={false}
+      />,
+    )
+    expect(html).toContain('href="https://github.com/o/r/commit/abc"')
+  })
+})

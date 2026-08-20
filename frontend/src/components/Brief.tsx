@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { parseMrkdwn } from '../format'
+import { parseMrkdwn, safeUrl } from '../format'
 import type { SlackAction, SlackBlock, SlackBriefPayload, SlackText } from '../types'
 import { Empty } from './Panel'
 
@@ -77,7 +77,7 @@ function ActionButton({ action }: { action: SlackAction }) {
   return (
     <span
       className={`rounded border px-2.5 py-1 text-xs ${classes}`}
-      title={action.url ?? 'Slack action — not clickable from the dashboard'}
+      title={safeUrl(action.url) ?? 'Slack action — not clickable from the dashboard'}
     >
       {label}
     </span>
@@ -107,11 +107,13 @@ function Mrkdwn({ text }: { text: string }) {
                 {node.text}
               </code>
             )
-          case 'link':
+          case 'link': {
+            const href = safeUrl(node.url)
+            if (!href) return <Fragment key={i}>{node.text}</Fragment>
             return (
               <a
                 key={i}
-                href={node.url}
+                href={href}
                 target="_blank"
                 rel="noreferrer"
                 className="text-sky-400 underline decoration-sky-700 underline-offset-2"
@@ -119,6 +121,7 @@ function Mrkdwn({ text }: { text: string }) {
                 {node.text}
               </a>
             )
+          }
           default:
             return <Fragment key={i}>{node.text}</Fragment>
         }

@@ -11,7 +11,11 @@ export default function App() {
           Vigil <span className="text-slate-600">/</span>{' '}
           <span className="font-normal text-slate-400">incidents</span>
         </Link>
-        <span className="font-mono text-xs text-slate-600">{API_BASE}</span>
+        {/* Dev only: knowing which API you are pointed at matters locally, but on
+            the public dashboard it is clutter that advertises the backend origin. */}
+        {import.meta.env.DEV ? (
+          <span className="font-mono text-xs text-slate-600">{API_BASE}</span>
+        ) : null}
       </header>
 
       <Routes>

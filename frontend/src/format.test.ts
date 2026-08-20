@@ -5,6 +5,7 @@ import {
   parseMrkdwn,
   parseStamp,
   percent,
+  safeUrl,
   severityColor,
   shortSha,
 } from './format'
@@ -132,5 +133,25 @@ describe('misc formatters', () => {
   it('renders a null confidence as a dash, not 0%', () => {
     expect(percent(null)).toBe('—')
     expect(percent(0.78)).toBe('78%')
+  })
+})
+
+describe('safeUrl', () => {
+  it('passes http and https through unchanged', () => {
+    expect(safeUrl('https://github.com/o/r/commit/abc')).toBe('https://github.com/o/r/commit/abc')
+    expect(safeUrl('http://localhost:8000/x')).toBe('http://localhost:8000/x')
+  })
+
+  it('rejects script-bearing schemes', () => {
+    // The brief carries LLM-written text and the LLM reads commit messages.
+    expect(safeUrl('javascript:alert(1)')).toBeUndefined()
+    expect(safeUrl('JaVaScRiPt:alert(1)')).toBeUndefined()
+    expect(safeUrl('data:text/html,<script>alert(1)</script>')).toBeUndefined()
+    expect(safeUrl('vbscript:msgbox')).toBeUndefined()
+  })
+
+  it('is undefined for missing or unparseable input', () => {
+    expect(safeUrl(undefined)).toBeUndefined()
+    expect(safeUrl('')).toBeUndefined()
   })
 })

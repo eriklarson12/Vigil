@@ -125,8 +125,13 @@ async def test_fire_brief_resolve_postmortem(client):
     assert detail["incident"]["status"] == "postmortem_done"
 
     # double-resolve is a no-op
-    resp = await c.post(f"/api/incidents/{incident['id']}/resolve")
+    resp = await c.post(f"/api/incidents/{incident['id']}/resolve", headers=TOKEN)
     assert resp.json()["resolved"] is False
+
+    # …and the endpoint is not open to the internet: it spends an LLM call and
+    # posts to Slack, and GET /api/incidents publishes every incident id.
+    resp = await c.post(f"/api/incidents/{incident['id']}/resolve")
+    assert resp.status_code == 401
 
 
 async def test_retrieval_hits_expected_runbook(client):
