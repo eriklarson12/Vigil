@@ -10,7 +10,7 @@ from datetime import timedelta
 
 import pytest
 
-from tests.conftest import ALERT_TIME, load_scenario
+from tests.conftest import ALERT_TIME, ROOT, load_scenario
 from vigil.commits.github import load_fixture_commits
 from vigil.commits.scoring import glob_to_regex, score_commits
 from vigil.config import get_settings
@@ -146,6 +146,13 @@ def test_planted_culprit_ranks_first(name, catalog):
 def test_cert_expiry_has_no_candidate_above_floor(catalog):
     scores = _score_scenario("cert_expiry", "checkout", catalog)
     assert all(s["score"] < 0.15 for s in scores), scores[:2]
+
+
+def test_culprit_map_covers_every_fixture():
+    """R2 regenerates these fixtures from a real repo; a scenario added or dropped
+    there must not silently escape the rank-1 assertions above."""
+    stems = {p.stem for p in (ROOT / "tests" / "fixtures" / "github").glob("*.json")}
+    assert stems == set(CULPRITS) | {"cert_expiry"}
 
 
 def test_glob_double_star():

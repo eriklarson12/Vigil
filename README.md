@@ -95,12 +95,17 @@ GitHub Actions free minutes · Slack free workspace · Vercel free tier.
 ```bash
 uv run pytest                   # 69 unit tests: golden scoring values, chunker, severity rubric…
 uv run pytest -m integration    # full pipeline vs real Postgres + fixture LLM, exactly-once checks
+uv run pytest -m retrieval_live # retrieval quality vs recorded real embeddings
 cd frontend && npm run test     # score-bar math and formatters (Vitest)
 ```
 
 The commit scorer has golden tests with hand-computed expected values, and every scenario's
 planted culprit must rank #1 (`cert_expiry` must rank *nothing*). LLM fixtures are validated
 through the real Pydantic schemas, so schema drift fails CI loudly.
+
+Retrieval quality is regression-tested too: real Gemini embeddings for the runbook chunks and
+the six scenario queries were recorded once and committed, so CI measures hit@3 and rank@1 of
+the correct runbook with no API key and no live calls.
 
 ## Deploying
 
