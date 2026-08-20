@@ -49,13 +49,19 @@ def build_query_text(alert: dict[str, Any]) -> str:
     return " ".join(p for p in parts if p)
 
 
-async def hybrid_search(
-    pool: AsyncConnectionPool, embedder: Embedder, alert: dict[str, Any]
+async def fused_rows(
+    pool: AsyncConnectionPool,
+    query_vec: list[float],
+    query_text: str,
+    service: str,
+    fetch: int = FETCH,
 ) -> list[dict[str, Any]]:
-    query_text = build_query_text(alert)
-    [query_vec] = await embedder.embed([query_text])
-    service = alert.get("labels", {}).get("service") or ""
+    """Fused ranking before the runbook cap, ordered by `final` DESC.
 
+    Split out of hybrid_search so the retrieval eval (tests/retrieval/) scores the
+    same SQL the brief consumes, rather than keeping a second copy of it. `fetch`
+    is a knob for the eval only: production always uses the default.
+    """
     async with pool.connection() as conn:
         async with conn.cursor(row_factory=dict_row) as cur:
             await cur.execute(
@@ -67,10 +73,19 @@ async def hybrid_search(
                     "rrf_k": RRF_K,
                     "service": service,
                     "tag_boost": TAG_BOOST,
-                    "fetch": FETCH,
+                    "fetch": fetch,
                 },
             )
-            rows = await cur.fetchall()
+            return await cur.fetchall()
+
+
+async def hybrid_search(
+    pool: AsyncConnectionPool, embedder: Embedder, alert: dict[str, Any]
+) -> list[dict[str, Any]]:
+    query_text = build_query_text(alert)
+    [query_vec] = await embedder.embed([query_text])
+    service = alert.get("labels", {}).get("service") or ""
+    rows = await fused_rows(pool, query_vec, query_text, service)
 
     # cap: top 4 chunks from at most 2 distinct runbooks
     picked: list[dict[str, Any]] = []
