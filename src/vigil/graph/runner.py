@@ -21,6 +21,9 @@ from vigil.ingest.queue import claim_next, mark_alert
 
 log = structlog.get_logger()
 
+# Scheduled retention. On-demand deletion of a single incident lives in
+# db/purge.py; the two must change together, because the checkpoint clauses below
+# can only name a thread id by joining back to `incidents`.
 PRUNE_SQL = [
     # 1. Checkpoints are the #1 growth vector: drop them 7 days post-resolution.
     """

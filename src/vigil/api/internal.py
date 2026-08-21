@@ -1,11 +1,13 @@
-"""Operational endpoints: health, resume tick, manual resolve (spec §13.4, §9)."""
+"""Operational endpoints: health, resume tick, manual resolve, delete (spec §13.4, §9)."""
 
 import secrets
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
 from vigil.config import get_settings
+from vigil.db.purge import IncidentBusy, delete_incident
 from vigil.ingest.resolve import resolve_incident
 
 router = APIRouter()
@@ -46,3 +48,19 @@ async def resolve_via_api(incident_id: str, request: Request) -> dict[str, Any]:
     _require_operator_token(request)
     resolved = await resolve_incident(request.app, incident_id, "api")
     return {"resolved": resolved}
+
+
+@router.delete("/api/incidents/{incident_id}")
+async def delete_via_api(incident_id: uuid.UUID, request: Request) -> dict[str, Any]:
+    # Irreversible, and it removes checkpoint rows that prune() could never reach
+    # once the incident row is gone. Same gate as resolve. Typing the path param
+    # as UUID is deliberate: GET /api/incidents/{id} takes a str and 500s on a
+    # malformed one.
+    _require_operator_token(request)
+    try:
+        counts = await delete_incident(request.app.state.deps.pool, str(incident_id))
+    except IncidentBusy as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if counts is None:
+        raise HTTPException(status_code=404, detail="incident not found")
+    return {"deleted": True, "incident_id": str(incident_id), "counts": counts}
