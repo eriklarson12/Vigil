@@ -33,7 +33,9 @@ FIXTURES = ROOT / "tests" / "fixtures" / "embeddings"
 RUNBOOKS_DIR = ROOT / "simulator" / "runbooks"
 SCENARIOS_DIR = ROOT / "simulator" / "scenarios"
 
-# Each runbook's opening H2 addresses exactly one scenario's alertname.
+# Each runbook's opening H2 addresses exactly one scenario's alertname. This is the
+# eval set, not the demo set: scenarios added later reuse these runbooks and are only
+# scored here once their query vectors are recorded and a row is added below.
 EXPECTED_RUNBOOK = {
     "bad_deploy": "checkout-service",
     "cert_expiry": "tls-certificates",
@@ -146,7 +148,8 @@ async def _rank_of(pool, scenario: str, recorded: dict, fetch: int | None = None
 async def test_recorded_queries_match_the_current_query_builder(pool):
     """A change to build_query_text silently invalidates every recorded query vector."""
     queries = _load("queries")["vectors"]
-    assert set(queries) == set(EXPECTED_RUNBOOK), "recorded scenarios differ from the mapping"
+    missing = set(EXPECTED_RUNBOOK) - set(queries)
+    assert not missing, f"eval scenarios with no recorded query vector: {sorted(missing)}"
     for scenario, recorded in sorted(queries.items()):
         alert = json.loads((SCENARIOS_DIR / f"{scenario}.json").read_text(encoding="utf-8"))["alert"]
         assert recorded["query_text"] == build_query_text(alert), (

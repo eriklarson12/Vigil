@@ -1,7 +1,9 @@
 /**
  * Render smoke test against payloads captured from a live `vigil-sim demo` run
- * (src/__fixtures__/). It proves the panels survive real data — including the
- * cert_expiry no-culprit path — without needing a browser.
+ * (src/__fixtures__/). It proves the panels survive real data — including both
+ * no-culprit shapes: cert_expiry (nothing above the score floor) and
+ * ambiguous_latency (ranked candidates, all under the confidence floor) — without
+ * needing a browser.
  *
  * Refresh the fixtures with:
  *   curl -s localhost:8000/api/incidents/<id> | python -m json.tool > src/__fixtures__/<name>.json
@@ -10,6 +12,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
+import ambiguousLatency from './__fixtures__/ambiguous_latency.json'
 import badDeploy from './__fixtures__/bad_deploy.json'
 import certExpiry from './__fixtures__/cert_expiry.json'
 import incidents from './__fixtures__/incidents.json'
@@ -25,7 +28,11 @@ import type { IncidentDetail, IncidentSummary, SlackBriefPayload } from './types
 const scenarios: Record<string, IncidentDetail> = {
   bad_deploy: badDeploy as unknown as IncidentDetail,
   cert_expiry: certExpiry as unknown as IncidentDetail,
+  ambiguous_latency: ambiguousLatency as unknown as IncidentDetail,
 }
+
+// Scenarios where triage deliberately named no culprit.
+const NO_CULPRIT = new Set(['cert_expiry', 'ambiguous_latency'])
 
 function culpritOf(d: IncidentDetail): string | null {
   const tf = d.events.find((e) => e.event_type === 'triage_finalized')
@@ -50,11 +57,15 @@ describe.each(Object.entries(scenarios))('%s', (name, detail) => {
       />,
     )
     expect(html).toContain(detail.commit_candidates[0].sha.slice(0, 10))
-    if (name === 'cert_expiry') {
+    if (NO_CULPRIT.has(name)) {
       expect(html).toContain('No likely culprit identified')
-      expect(html).toContain('gated')
     } else {
       expect(html).toContain('likely culprit')
+    }
+    if (name === 'cert_expiry') expect(html).toContain('gated')
+    if (name === 'ambiguous_latency') {
+      // The candidates still carry their LLM ranks; only the culprit is withheld.
+      expect(html).toContain('LLM rank 1, confidence 35%')
     }
   })
 

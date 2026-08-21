@@ -1,0 +1,23 @@
+{
+  "scenario": "auth_key_rotation",
+  "alert": {
+    "labels": {
+      "alertname": "TokenValidationFailures",
+      "service": "auth",
+      "severity": "critical",
+      "scenario": "auth_key_rotation"
+    },
+    "annotations": {
+      "summary": "Auth token validation failing for 92% of requests",
+      "description": "Verifiers reject JWTs with 'unknown key id kid-2026-08'. Sessions issued before the last auth rollout still validate; new ones do not."
+    },
+    "fingerprint": "fp-auth-key-rotation-001"
+  },
+  "deploys": [
+    {
+      "service": "auth",
+      "commit_shas": ["e1f2a3b4c5"],
+      "minutes_before_alert": 15
+    }
+  ]
+}

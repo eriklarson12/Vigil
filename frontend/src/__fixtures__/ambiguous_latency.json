@@ -1,0 +1,249 @@
+{
+    "incident": {
+        "id": "66a71425-ee44-4aee-afac-3e2bad8ed261",
+        "service": "checkout",
+        "title": "LatencyBudgetBurn on checkout",
+        "severity": "SEV2",
+        "status": "postmortem_done",
+        "slack_message_ts": "mock-66a71425-ee44-4aee-afac-3e2bad8ed261",
+        "resolution_source": "alertmanager",
+        "created_at": "2026-08-21 03:31:06.853715+00:00",
+        "resolved_at": "2026-08-21 03:31:08.895849+00:00"
+    },
+    "events": [
+        {
+            "event_type": "brief_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "\ud83d\udfe0 SEV2 \u00b7 checkout \u00b7 LatencyBudgetBurn",
+                    "attachments": [
+                        {
+                            "color": "#F2A33C",
+                            "blocks": [
+                                {
+                                    "text": {
+                                        "text": "\ud83d\udfe0 SEV2 \u00b7 checkout \u00b7 LatencyBudgetBurn",
+                                        "type": "plain_text"
+                                    },
+                                    "type": "header"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Impact*\nCheckout p99 is 2.4s against a 780ms baseline, burning the latency budget 6x, with no elevated error rate so far.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Likely cause:* no likely commit identified \u2014 Three changes touch the payment path and none explains a 1.6s p99 regression on its own; the top candidate reaches 0.35 confidence, below the 0.4 floor for naming a culprit.\nLatency is concentrated in the payment authorization path. A 250ms batching window, a shared HTTP client left on default pool limits, and doubled worker concurrency all plausibly contribute, and no deploy event landed in the window to separate them.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Runbook:* `checkout-service` \u2192 Checkout Service Runbook > Dashboards and logs\n_Latency triage starts at the Checkout Overview dashboard and the payments provider view, since no single commit is implicated._",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Next steps*\n1. Compare Checkout Overview latency percentiles against the payments provider dashboard to split gateway time from service time.\n2. Check whether the p99 rise tracks the batching window by temporarily lowering it to 50ms.\n3. If service time dominates, inspect connection pool saturation on the shared HTTP client.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "type": "context",
+                                    "elements": [
+                                        {
+                                            "text": "incident `66a71425-ee44-4aee-afac-3e2bad8ed261` \u00b7 started 2026-08-21T03:31:06.836820+00:00",
+                                            "type": "mrkdwn"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "actions",
+                                    "elements": [
+                                        {
+                                            "text": {
+                                                "text": "Mark resolved",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button",
+                                            "style": "primary",
+                                            "value": "66a71425-ee44-4aee-afac-3e2bad8ed261",
+                                            "action_id": "resolve_incident"
+                                        },
+                                        {
+                                            "url": "http://localhost:5173/incidents/66a71425-ee44-4aee-afac-3e2bad8ed261",
+                                            "text": {
+                                                "text": "Dashboard",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "created_at": "2026-08-21 03:31:06.869199+00:00"
+        },
+        {
+            "event_type": "triage_finalized",
+            "payload": {
+                "chunks": 4,
+                "errors": {},
+                "scored": 4,
+                "culprit": null,
+                "severity": "SEV2",
+                "llm_calls": 2
+            },
+            "created_at": "2026-08-21 03:31:06.871713+00:00"
+        },
+        {
+            "event_type": "resolved",
+            "payload": {
+                "source": "alertmanager"
+            },
+            "created_at": "2026-08-21 03:31:08.897658+00:00"
+        },
+        {
+            "event_type": "postmortem_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "Postmortem for incident 66a71425-ee44-4aee-afac-3e2bad8ed261",
+                    "blocks": [
+                        {
+                            "text": {
+                                "text": "\ud83d\udcdd Postmortem",
+                                "type": "plain_text"
+                            },
+                            "type": "header"
+                        },
+                        {
+                            "text": {
+                                "text": "# Postmortem: LatencyBudgetBurn on checkout\n\n**Severity:** SEV2 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nCheckout p99 latency tripled with no error-rate change and no deploy in the window. Vigil declined to name a culprit: the strongest candidate reached 0.35 confidence against a 0.4 floor. The brief carried three ranked candidates and the dashboard triage path instead.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T-2h | Three changes touching the payment path merged within 40 minutes of each other. |\n| T+0m | LatencyBudgetBurn alert fired for checkout (p99 2.4s against a 780ms baseline). |\n| T+1m | Vigil brief posted: no culprit named, three candidates ranked with rationales, dashboards-and-logs runbook cited. |\n| T+resolution | Incident marked resolved after the batching window was lowered and p99 returned to budget. |\n\n## Root cause\nMost likely the 250ms batching window added to authorize_all in libs/payments/batch.py, compounded by doubled worker concurrency against unchanged downstream pool limits. The evidence available during the incident did not establish a single cause, and the automated analysis reported that rather than guessing.\n\n## Contributing factors\n- Three latency-relevant changes landed in the same window with no deploy markers to separate them.\n- The batching window was introduced with no latency budget check in CI.\n\n## Impact\nNo requests failed; checkout p99 ran at 2.4s against a 780ms baseline, burning the latency budget roughly 6x for the duration.\n\n## Resolution\nLowered the batching window to 50ms, which returned p99 to 900ms. The concurrency change was left in place and is being monitored.\n\n## What went well\n- The confidence floor prevented a plausible-sounding but unproven root cause from being stated as fact.\n- On-call still received ranked candidates with per-feature scores, so triage started from evidence rather than from scratch.\n\n## What went poorly\n- Latency-affecting changes ship without deploy events, so deploy correlation contributed nothing here.\n- No p99 regression gate exists in CI for the payment path.\n\n## Action items\n- **P1** Emit deploy events for config and library changes so latency incidents get deploy correlation too. _(owner: @erik)_\n- **P1** Add a p99 budget check to the payment path in CI. _(owner: @erik)_\n- **P2** Document the batching window as a tunable with its latency cost in the checkout runbook. _(owner: on-call)_",
+                                "type": "mrkdwn"
+                            },
+                            "type": "section"
+                        }
+                    ]
+                }
+            },
+            "created_at": "2026-08-21 03:31:08.909224+00:00"
+        }
+    ],
+    "commit_candidates": [
+        {
+            "sha": "aa11bb22cc",
+            "message": "perf: batch payment gateway calls per cart",
+            "author": "dev-a",
+            "committed_at": "2026-08-21 02:01:06.836820+00:00",
+            "files": [
+                {
+                    "path": "libs/payments/batch.py",
+                    "additions": 90,
+                    "deletions": 30
+                }
+            ],
+            "heuristic_score": 0.5531,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 1.0,
+                "f_risk": 0.0,
+                "f_size": 0.694262,
+                "f_time": 0.778801,
+                "f_deploy": 0.0
+            },
+            "llm_rank": 1,
+            "llm_confidence": 0.35,
+            "llm_rationale": "Batcher(window_ms=250) in libs/payments/batch.py adds up to 250ms per authorization (@@ -12,10 +12,40), which is real but roughly a sixth of the 1.6s regression, and the alert reports no change in error rate. Plausible contributor, not a demonstrated cause."
+        },
+        {
+            "sha": "dd33ee44ff",
+            "message": "refactor: reuse the checkout http client across requests",
+            "author": "dev-b",
+            "committed_at": "2026-08-21 01:31:06.836820+00:00",
+            "files": [
+                {
+                    "path": "services/checkout/http.py",
+                    "additions": 60,
+                    "deletions": 45
+                }
+            ],
+            "heuristic_score": 0.5475,
+            "feature_scores": {
+                "f_msg": 0.15,
+                "f_path": 1.0,
+                "f_risk": 0.0,
+                "f_size": 0.675102,
+                "f_time": 0.716531,
+                "f_deploy": 0.0
+            },
+            "llm_rank": 2,
+            "llm_confidence": 0.3,
+            "llm_rationale": "The shared httpx client in services/checkout/http.py keeps the default connection limits while serving all requests, which can queue under load; nothing in the diff pins it to the observed p99 shape."
+        },
+        {
+            "sha": "5566778899",
+            "message": "chore: raise checkout worker concurrency",
+            "author": "dev-c",
+            "committed_at": "2026-08-21 01:19:06.836820+00:00",
+            "files": [
+                {
+                    "path": "deploy/checkout.yaml",
+                    "additions": 2,
+                    "deletions": 2
+                }
+            ],
+            "heuristic_score": 0.4012,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.5,
+                "f_risk": 0.3,
+                "f_size": 0.23299,
+                "f_time": 0.693041,
+                "f_deploy": 0.0
+            },
+            "llm_rank": 3,
+            "llm_confidence": 0.22,
+            "llm_rationale": "Doubling workers 8 to 16 in deploy/checkout.yaml raises concurrency against the same downstream pools, which can increase queueing latency, but the manifest change was not part of a deploy in the window."
+        },
+        {
+            "sha": "1122334455",
+            "message": "docs: refresh the latency SLO table",
+            "author": "dev-d",
+            "committed_at": "2026-08-20 13:31:06.836820+00:00",
+            "files": [
+                {
+                    "path": "docs/slo.md",
+                    "additions": 22,
+                    "deletions": 9
+                }
+            ],
+            "heuristic_score": 0.0238,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.501717,
+                "f_time": 0.096972,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        }
+    ],
+    "postmortem": {
+        "markdown": "# Postmortem: LatencyBudgetBurn on checkout\n\n**Severity:** SEV2 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nCheckout p99 latency tripled with no error-rate change and no deploy in the window. Vigil declined to name a culprit: the strongest candidate reached 0.35 confidence against a 0.4 floor. The brief carried three ranked candidates and the dashboard triage path instead.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T-2h | Three changes touching the payment path merged within 40 minutes of each other. |\n| T+0m | LatencyBudgetBurn alert fired for checkout (p99 2.4s against a 780ms baseline). |\n| T+1m | Vigil brief posted: no culprit named, three candidates ranked with rationales, dashboards-and-logs runbook cited. |\n| T+resolution | Incident marked resolved after the batching window was lowered and p99 returned to budget. |\n\n## Root cause\nMost likely the 250ms batching window added to authorize_all in libs/payments/batch.py, compounded by doubled worker concurrency against unchanged downstream pool limits. The evidence available during the incident did not establish a single cause, and the automated analysis reported that rather than guessing.\n\n## Contributing factors\n- Three latency-relevant changes landed in the same window with no deploy markers to separate them.\n- The batching window was introduced with no latency budget check in CI.\n\n## Impact\nNo requests failed; checkout p99 ran at 2.4s against a 780ms baseline, burning the latency budget roughly 6x for the duration.\n\n## Resolution\nLowered the batching window to 50ms, which returned p99 to 900ms. The concurrency change was left in place and is being monitored.\n\n## What went well\n- The confidence floor prevented a plausible-sounding but unproven root cause from being stated as fact.\n- On-call still received ranked candidates with per-feature scores, so triage started from evidence rather than from scratch.\n\n## What went poorly\n- Latency-affecting changes ship without deploy events, so deploy correlation contributed nothing here.\n- No p99 regression gate exists in CI for the payment path.\n\n## Action items\n- **P1** Emit deploy events for config and library changes so latency incidents get deploy correlation too. _(owner: @erik)_\n- **P1** Add a p99 budget check to the payment path in CI. _(owner: @erik)_\n- **P2** Document the batching window as a tunable with its latency cost in the checkout runbook. _(owner: on-call)_",
+        "model_used": "gemini-3.6-flash",
+        "created_at": "2026-08-21 03:31:08.907775+00:00"
+    }
+}

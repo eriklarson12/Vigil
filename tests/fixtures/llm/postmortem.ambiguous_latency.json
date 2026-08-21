@@ -1,0 +1,29 @@
+{
+  "summary": "Checkout p99 latency tripled with no error-rate change and no deploy in the window. Vigil declined to name a culprit: the strongest candidate reached 0.35 confidence against a 0.4 floor. The brief carried three ranked candidates and the dashboard triage path instead.",
+  "timeline": [
+    {"time": "T-2h", "event": "Three changes touching the payment path merged within 40 minutes of each other."},
+    {"time": "T+0m", "event": "LatencyBudgetBurn alert fired for checkout (p99 2.4s against a 780ms baseline)."},
+    {"time": "T+1m", "event": "Vigil brief posted: no culprit named, three candidates ranked with rationales, dashboards-and-logs runbook cited."},
+    {"time": "T+resolution", "event": "Incident marked resolved after the batching window was lowered and p99 returned to budget."}
+  ],
+  "root_cause": "Most likely the 250ms batching window added to authorize_all in libs/payments/batch.py, compounded by doubled worker concurrency against unchanged downstream pool limits. The evidence available during the incident did not establish a single cause, and the automated analysis reported that rather than guessing.",
+  "contributing_factors": [
+    "Three latency-relevant changes landed in the same window with no deploy markers to separate them.",
+    "The batching window was introduced with no latency budget check in CI."
+  ],
+  "impact": "No requests failed; checkout p99 ran at 2.4s against a 780ms baseline, burning the latency budget roughly 6x for the duration.",
+  "resolution": "Lowered the batching window to 50ms, which returned p99 to 900ms. The concurrency change was left in place and is being monitored.",
+  "went_well": [
+    "The confidence floor prevented a plausible-sounding but unproven root cause from being stated as fact.",
+    "On-call still received ranked candidates with per-feature scores, so triage started from evidence rather than from scratch."
+  ],
+  "went_poorly": [
+    "Latency-affecting changes ship without deploy events, so deploy correlation contributed nothing here.",
+    "No p99 regression gate exists in CI for the payment path."
+  ],
+  "action_items": [
+    {"description": "Emit deploy events for config and library changes so latency incidents get deploy correlation too.", "owner": "@erik", "priority": "P1"},
+    {"description": "Add a p99 budget check to the payment path in CI.", "owner": "@erik", "priority": "P1"},
+    {"description": "Document the batching window as a tunable with its latency cost in the checkout runbook.", "owner": "on-call", "priority": "P2"}
+  ]
+}

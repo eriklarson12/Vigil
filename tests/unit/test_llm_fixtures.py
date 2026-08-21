@@ -7,6 +7,7 @@ import pathlib
 import pytest
 
 from vigil.commits.schemas import CommitAnalysis
+from vigil.config import get_settings
 from vigil.llm.client import FakeLLMClient
 from vigil.llm.schemas import BriefContent, Postmortem
 
@@ -46,3 +47,29 @@ def test_every_scenario_has_brief_fixture():
     briefs = {p.name.split(".")[1] for p in FIXTURES.glob("brief_composition.*.json")}
     missing = scenarios - briefs
     assert not missing, f"scenarios without a brief_composition fixture: {missing}"
+
+
+def test_every_ranking_fixture_names_a_scored_candidate():
+    """A verdict for a sha the scorer never surfaced is dropped at runtime (spec §6.3),
+    so a fixture that only names such shas would demo an empty candidate list."""
+    github = FIXTURES.parent / "github"
+    for path in sorted(FIXTURES.glob("commit_ranking.*.json")):
+        scenario = path.name.split(".")[1]
+        fixture = github / f"{scenario}.json"
+        if not fixture.exists():  # commit_ranking.default.json
+            continue
+        shas = {c["sha"] for c in json.loads(fixture.read_text(encoding="utf-8"))["commits"]}
+        analysis = CommitAnalysis.model_validate(json.loads(path.read_text(encoding="utf-8")))
+        assert analysis.verdicts, f"{path.name}: no verdicts"
+        assert {v.sha for v in analysis.verdicts} <= shas, f"{path.name}: invented shas"
+        if analysis.likely_culprit_sha:
+            assert analysis.likely_culprit_sha in shas, f"{path.name}: culprit not in the repo"
+
+
+def test_ambiguous_latency_stays_under_the_confidence_floor():
+    """The scenario demos the confidence guard: ranked candidates, no named culprit."""
+    path = FIXTURES / "commit_ranking.ambiguous_latency.json"
+    analysis = CommitAnalysis.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    assert analysis.likely_culprit_sha is None
+    assert analysis.no_culprit_reason
+    assert max(v.confidence for v in analysis.verdicts) < get_settings().confidence_floor

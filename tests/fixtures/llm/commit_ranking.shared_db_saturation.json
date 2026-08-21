@@ -1,0 +1,27 @@
+{
+  "verdicts": [
+    {
+      "sha": "b7c8d9e0f1",
+      "rank": 1,
+      "confidence": 0.84,
+      "rationale": "db/pool.yaml raises max_connections 40 to 180 and statement_timeout 5s to 60s (@@ -8,2 +8,2), and db/reporting.sql adds an on-demand revenue rollup joining orders to payments. Long reporting queries can now hold connections for a minute instead of being cancelled at 5s, which drains the pool and produces the 'pool exhausted, 0 idle' waits. It shipped 25 minutes before the alert.",
+      "suggested_action": "rollback_deploy"
+    },
+    {
+      "sha": "44556677aa",
+      "rank": 2,
+      "confidence": 0.06,
+      "rationale": "Adds pool acquisition tests under db/tests/; test-only and 18 hours old, so it does not run in production.",
+      "suggested_action": "investigate"
+    },
+    {
+      "sha": "ccdd112233",
+      "rank": 3,
+      "confidence": 0.02,
+      "rationale": "Grafana dashboard JSON only; changes visualization, not database behaviour.",
+      "suggested_action": "investigate"
+    }
+  ],
+  "likely_culprit_sha": "b7c8d9e0f1",
+  "no_culprit_reason": null
+}

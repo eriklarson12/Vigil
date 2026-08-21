@@ -1,0 +1,44 @@
+{
+  "commits": [
+    {
+      "sha": "9a8b7c6d5e",
+      "message": "feat: enable dynamic pricing engine on checkout",
+      "author": "dev-a",
+      "hours_before_alert": 2.5,
+      "files": [{"path": "services/checkout/pricing.py", "additions": 180, "deletions": 40}],
+      "patch": "--- services/checkout/pricing.py\n@@ -18,6 +18,14 @@ def quote_total(cart, customer):\n-    return catalog_price(cart)\n+    if flags.enabled(\"dynamic_pricing\", customer):\n+        return dynamic_price(cart, customer)   # recomputed again at charge time\n+    return catalog_price(cart)\n@@ +96,180 @@\n+def dynamic_price(cart, customer):\n+    ..."
+    },
+    {
+      "sha": "4f3e2d1c0b",
+      "message": "Revert \"feat: enable dynamic pricing engine on checkout\"\n\nThis reverts commit 9a8b7c6d5e. Quotes and charges disagree under load.",
+      "author": "dev-b",
+      "hours_before_alert": 0.4,
+      "files": [{"path": "services/checkout/pricing.py", "additions": 40, "deletions": 180}],
+      "patch": "--- services/checkout/pricing.py\n@@ revert of 9a8b7c6d5e @@"
+    },
+    {
+      "sha": "6767abcd12",
+      "message": "docs: write up the pricing rollout plan",
+      "author": "dev-c",
+      "hours_before_alert": 12,
+      "files": [{"path": "docs/pricing.md", "additions": 60, "deletions": 0}],
+      "patch": "--- docs/pricing.md\n@@ documentation only @@"
+    },
+    {
+      "sha": "8989ef0123",
+      "message": "test: cover inventory reorder thresholds",
+      "author": "dev-d",
+      "hours_before_alert": 20,
+      "files": [{"path": "services/inventory/tests/test_reorder.py", "additions": 85, "deletions": 0}],
+      "patch": "--- services/inventory/tests/test_reorder.py\n@@ tests only @@"
+    },
+    {
+      "sha": "2323fedc45",
+      "message": "chore: tidy CI cache keys",
+      "author": "dev-e",
+      "hours_before_alert": 30,
+      "files": [{"path": ".github/workflows/ci.yml", "additions": 4, "deletions": 4}],
+      "patch": "--- .github/workflows/ci.yml\n@@ -30,4 +30,4 @@ cache key bump @@"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "scenario": "shared_db_saturation",
+  "alert": {
+    "labels": {
+      "alertname": "ConnectionPoolExhausted",
+      "service": "payments-db",
+      "severity": "critical",
+      "scenario": "shared_db_saturation"
+    },
+    "annotations": {
+      "summary": "payments-db connection pool at 100% for 4 minutes",
+      "description": "Clients wait 8s+ for a connection and time out with 'pool exhausted, 0 idle'. Checkout and orders both report downstream 5xx."
+    },
+    "fingerprint": "fp-shared-db-saturation-001"
+  },
+  "deploys": [
+    {
+      "service": "payments-db",
+      "commit_shas": ["b7c8d9e0f1"],
+      "minutes_before_alert": 25
+    }
+  ]
+}

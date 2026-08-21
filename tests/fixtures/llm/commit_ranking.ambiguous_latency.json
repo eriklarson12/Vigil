@@ -1,0 +1,27 @@
+{
+  "verdicts": [
+    {
+      "sha": "aa11bb22cc",
+      "rank": 1,
+      "confidence": 0.35,
+      "rationale": "Batcher(window_ms=250) in libs/payments/batch.py adds up to 250ms per authorization (@@ -12,10 +12,40), which is real but roughly a sixth of the 1.6s regression, and the alert reports no change in error rate. Plausible contributor, not a demonstrated cause.",
+      "suggested_action": "investigate"
+    },
+    {
+      "sha": "dd33ee44ff",
+      "rank": 2,
+      "confidence": 0.3,
+      "rationale": "The shared httpx client in services/checkout/http.py keeps the default connection limits while serving all requests, which can queue under load; nothing in the diff pins it to the observed p99 shape.",
+      "suggested_action": "investigate"
+    },
+    {
+      "sha": "5566778899",
+      "rank": 3,
+      "confidence": 0.22,
+      "rationale": "Doubling workers 8 to 16 in deploy/checkout.yaml raises concurrency against the same downstream pools, which can increase queueing latency, but the manifest change was not part of a deploy in the window.",
+      "suggested_action": "investigate"
+    }
+  ],
+  "likely_culprit_sha": null,
+  "no_culprit_reason": "Three changes touch the payment path and none explains a 1.6s p99 regression on its own; the top candidate reaches 0.35 confidence, below the 0.4 floor for naming a culprit."
+}

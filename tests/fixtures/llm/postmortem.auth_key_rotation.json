@@ -1,0 +1,29 @@
+{
+  "summary": "A JWT signing key rotation published the new key and removed the old one in a single change, so 92% of token validations failed until it was reverted. Vigil traced it to the JWKS commit fifteen minutes before the alert and named checkout as the user-facing service in the blast radius.",
+  "timeline": [
+    {"time": "T-15m", "event": "Commit e1f2a3b4c5 deployed: signing key switched to kid-2026-08, previous key dropped from config/auth/jwks.json."},
+    {"time": "T+0m", "event": "TokenValidationFailures alert fired for auth (92% rejection rate)."},
+    {"time": "T+1m", "event": "Vigil brief posted: SEV3 with checkout in the blast radius, culprit e1f2a3b4c5 at 0.91 confidence."},
+    {"time": "T+resolution", "event": "Incident marked resolved after the JWKS change was reverted and CD redeployed auth."}
+  ],
+  "root_cause": "Key rotation is a two-step operation and shipped as one. Removing kid-2026-02 from the published key set at the same moment signing moved to kid-2026-08 meant any verifier holding a cached JWKS rejected every new token with 'unknown key id'.",
+  "contributing_factors": [
+    "Verifiers cache the JWKS for 10 minutes, so the old key had to remain published across at least one cache lifetime.",
+    "No staging check validated a token signed with the new key against a cold verifier."
+  ],
+  "impact": "Auth is not user facing but checkout depends on it: new sign-ins and session refreshes failed for the duration of the incident.",
+  "resolution": "Reverted e1f2a3b4c5 so the previous key id was published again; CD redeployed auth and validation recovered.",
+  "went_well": [
+    "The blast radius from the service graph made the customer impact obvious even though the alerting service is internal.",
+    "The deploy-config runbook prescribed the git revert path that was actually used."
+  ],
+  "went_poorly": [
+    "A rotation runbook exists in principle but the two-deploy sequence was not enforced anywhere.",
+    "The change touched code and published config together, so a config-only rollback was not possible."
+  ],
+  "action_items": [
+    {"description": "Split key rotation into publish-both then switch-signing deploys, enforced in CI.", "owner": "@erik", "priority": "P0"},
+    {"description": "Add a verifier smoke test that validates a freshly signed token against a cold JWKS cache.", "owner": "@erik", "priority": "P1"},
+    {"description": "Write an auth runbook section covering key rotation and rollback.", "owner": "on-call", "priority": "P2"}
+  ]
+}

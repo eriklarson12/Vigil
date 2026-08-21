@@ -1,0 +1,23 @@
+{
+  "scenario": "hotfix_regression",
+  "alert": {
+    "labels": {
+      "alertname": "OrderQueryTimeouts",
+      "service": "orders",
+      "severity": "critical",
+      "scenario": "hotfix_regression"
+    },
+    "annotations": {
+      "summary": "Orders read queries timing out for 11% of requests",
+      "description": "GET /api/orders returns 504 after 30s. Postgres shows long-running SELECTs holding connections; statement_timeout no longer cancels them."
+    },
+    "fingerprint": "fp-hotfix-regression-001"
+  },
+  "deploys": [
+    {
+      "service": "orders",
+      "commit_shas": ["f6a7b8c9d0"],
+      "minutes_before_alert": 30
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "verdicts": [
+    {
+      "sha": "e1f2a3b4c5",
+      "rank": 1,
+      "confidence": 0.91,
+      "rationale": "config/auth/jwks.json replaces the published key set with kid-2026-08 and drops the previous key instead of publishing both (@@ -1,8 +1,8), while services/auth/keys.py starts signing with settings.active_kid. Verifiers that cached the old JWKS reject new tokens with 'unknown key id kid-2026-08', matching the alert exactly. It shipped 15 minutes before the alert.",
+      "suggested_action": "rollback_deploy"
+    },
+    {
+      "sha": "7788990011",
+      "rank": 2,
+      "confidence": 0.08,
+      "rationale": "A retry loop around the auth cache warmup (services/auth/cache.py, +12/-3, four hours old); it affects cold-start latency, not key ids in token validation.",
+      "suggested_action": "investigate"
+    }
+  ],
+  "likely_culprit_sha": "e1f2a3b4c5",
+  "no_culprit_reason": null
+}

@@ -1,0 +1,39 @@
+{
+  "commits": [
+    {
+      "sha": "e1f2a3b4c5",
+      "message": "feat: rotate JWT signing key to kid-2026-08",
+      "author": "dev-a",
+      "hours_before_alert": 0.5,
+      "files": [
+        {"path": "services/auth/keys.py", "additions": 36, "deletions": 12},
+        {"path": "config/auth/jwks.json", "additions": 8, "deletions": 8}
+      ],
+      "patch": "--- services/auth/keys.py\n@@ -22,6 +22,8 @@ def signing_key():\n-    return KEYS[ACTIVE_KID]\n+    return KEYS[settings.active_kid]   # kid-2026-08\n--- config/auth/jwks.json\n@@ -1,8 +1,8 @@\n-  \"keys\": [{\"kid\": \"kid-2026-02\", ...}]\n+  \"keys\": [{\"kid\": \"kid-2026-08\", ...}]   # previous key dropped from the set"
+    },
+    {
+      "sha": "7788990011",
+      "message": "fix: retry the auth cache warmup on cold start",
+      "author": "dev-b",
+      "hours_before_alert": 4,
+      "files": [{"path": "services/auth/cache.py", "additions": 12, "deletions": 3}],
+      "patch": "--- services/auth/cache.py\n@@ -55,3 +55,12 @@ warmup retry loop @@"
+    },
+    {
+      "sha": "aabb445566",
+      "message": "feat: gift card balance check on checkout",
+      "author": "dev-c",
+      "hours_before_alert": 6,
+      "files": [{"path": "services/checkout/giftcard.py", "additions": 110, "deletions": 0}],
+      "patch": "--- services/checkout/giftcard.py\n@@ +1,110 @@ (new file)"
+    },
+    {
+      "sha": "99aa887766",
+      "message": "docs: describe the session lifecycle",
+      "author": "dev-d",
+      "hours_before_alert": 16,
+      "files": [{"path": "docs/sessions.md", "additions": 40, "deletions": 6}],
+      "patch": "--- docs/sessions.md\n@@ documentation only @@"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "impact_narrative": "payments-db is saturated and both checkout and orders are failing behind it, affecting roughly 2,000 database-backed requests per minute.",
+  "cause_summary": "Commit b7c8d9e0f1 raised the payments-db statement timeout from 5s to 60s and added an on-demand reporting query; long reporting reads now hold connections for a minute and exhaust the pool. It shipped 25 minutes before the alert.",
+  "runbook_citation": {
+    "slug": "orders-database",
+    "heading_path": "Orders Database Runbook > Connection pool exhaustion",
+    "why": "Covers pool saturation triage and warns that a recent change holding connections is the usual cause."
+  },
+  "next_steps": [
+    "Roll back b7c8d9e0f1 to restore the 5s statement timeout, then confirm idle connections recover.",
+    "Terminate the running reporting queries with pg_terminate_backend to release the pool now.",
+    "Move the revenue rollup to a read replica with its own connection budget before re-landing it."
+  ]
+}

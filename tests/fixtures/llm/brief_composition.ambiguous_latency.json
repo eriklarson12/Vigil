@@ -1,0 +1,14 @@
+{
+  "impact_narrative": "Checkout p99 is 2.4s against a 780ms baseline, burning the latency budget 6x, with no elevated error rate so far.",
+  "cause_summary": "Latency is concentrated in the payment authorization path. A 250ms batching window, a shared HTTP client left on default pool limits, and doubled worker concurrency all plausibly contribute, and no deploy event landed in the window to separate them.",
+  "runbook_citation": {
+    "slug": "checkout-service",
+    "heading_path": "Checkout Service Runbook > Dashboards and logs",
+    "why": "Latency triage starts at the Checkout Overview dashboard and the payments provider view, since no single commit is implicated."
+  },
+  "next_steps": [
+    "Compare Checkout Overview latency percentiles against the payments provider dashboard to split gateway time from service time.",
+    "Check whether the p99 rise tracks the batching window by temporarily lowering it to 50ms.",
+    "If service time dominates, inspect connection pool saturation on the shared HTTP client."
+  ]
+}

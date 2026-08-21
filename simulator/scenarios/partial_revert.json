@@ -1,0 +1,23 @@
+{
+  "scenario": "partial_revert",
+  "alert": {
+    "labels": {
+      "alertname": "PaymentFailures",
+      "service": "checkout",
+      "severity": "critical",
+      "scenario": "partial_revert"
+    },
+    "annotations": {
+      "summary": "Checkout payment failure rate above 6% for 5 minutes",
+      "description": "POST /api/checkout/pay returns 'price mismatch between quote and charge' for 6.3% of attempts. A revert of the dynamic pricing rollout is merged on main but has not been deployed."
+    },
+    "fingerprint": "fp-partial-revert-001"
+  },
+  "deploys": [
+    {
+      "service": "checkout",
+      "commit_shas": ["9a8b7c6d5e"],
+      "minutes_before_alert": 35
+    }
+  ]
+}

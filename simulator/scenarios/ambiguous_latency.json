@@ -1,0 +1,17 @@
+{
+  "scenario": "ambiguous_latency",
+  "alert": {
+    "labels": {
+      "alertname": "LatencyBudgetBurn",
+      "service": "checkout",
+      "severity": "warning",
+      "scenario": "ambiguous_latency"
+    },
+    "annotations": {
+      "summary": "Checkout p99 latency 2.4s, burning the latency budget 6x",
+      "description": "p99 on POST /api/checkout/pay drifted from 780ms to 2.4s over an hour. Error rate is normal, no deploy in the window, three unrelated changes touch the payment path."
+    },
+    "fingerprint": "fp-ambiguous-latency-001"
+  },
+  "deploys": []
+}

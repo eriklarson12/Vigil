@@ -113,7 +113,14 @@ CULPRITS = {
     "memory_leak": ("inventory", "c3d4e5f6a7"),
     "config_typo": ("checkout", "d4e5f6a7b8"),
     "dependency_bump": ("orders", "e5f6a7b8c9"),
+    "partial_revert": ("checkout", "9a8b7c6d5e"),
+    "shared_db_saturation": ("payments-db", "b7c8d9e0f1"),
+    "auth_key_rotation": ("auth", "e1f2a3b4c5"),
+    "hotfix_regression": ("orders", "f6a7b8c9d0"),
 }
+# Scenarios with no single planted culprit: cert_expiry has no candidate above the
+# floor at all, ambiguous_latency has three that the scorer cannot separate.
+NO_SINGLE_CULPRIT = {"cert_expiry", "ambiguous_latency"}
 
 
 def _score_scenario(name: str, service: str, catalog):
@@ -148,11 +155,28 @@ def test_cert_expiry_has_no_candidate_above_floor(catalog):
     assert all(s["score"] < 0.15 for s in scores), scores[:2]
 
 
+def test_partial_revert_ranks_the_reverted_commit_above_its_revert(catalog):
+    """The revert is the newest touch of the failing file; the commit it reverts wins."""
+    scores = {s["sha"]: s for s in _score_scenario("partial_revert", "checkout", catalog)}
+    reverted, revert = scores["9a8b7c6d5e"], scores["4f3e2d1c0b"]
+    assert reverted["score"] > revert["score"]
+    assert revert["feature_scores"]["f_msg"] == 0.0
+    assert reverted["feature_scores"]["f_msg"] >= 0.6
+
+
+def test_ambiguous_latency_has_three_inseparable_candidates(catalog):
+    """The scenario's point: scoring hands the LLM real candidates it cannot rank apart."""
+    scores = _score_scenario("ambiguous_latency", "checkout", catalog)
+    above_floor = [s for s in scores if s["score"] >= 0.15]
+    assert len(above_floor) == 3
+    assert above_floor[0]["score"] - above_floor[1]["score"] < 0.02
+
+
 def test_culprit_map_covers_every_fixture():
     """R2 regenerates these fixtures from a real repo; a scenario added or dropped
     there must not silently escape the rank-1 assertions above."""
     stems = {p.stem for p in (ROOT / "tests" / "fixtures" / "github").glob("*.json")}
-    assert stems == set(CULPRITS) | {"cert_expiry"}
+    assert stems == set(CULPRITS) | NO_SINGLE_CULPRIT
 
 
 def test_glob_double_star():

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-121%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-150%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -51,7 +51,7 @@ The first ten minutes of an incident go to gathering context: what changed, who 
 - **Slack brief:** Block Kit message with severity, culprit commit and confidence, runbook excerpt, affected services, and a "Mark resolved" button
 - **Automatic postmortem:** resolution starts a second graph that gathers the incident timeline and posts a blameless postmortem in the brief's thread
 - **Incident dashboard:** read-only React view of every incident, including the per-feature breakdown of why one commit outranked the rest
-- **Incident simulator:** `vigil-sim` fires Alertmanager-format alerts for six scenarios with planted culprits, entirely offline
+- **Incident simulator:** `vigil-sim` fires Alertmanager-format alerts for eleven scenarios with planted culprits, entirely offline
 - **Exactly-once resumability:** LangGraph checkpoints live in Postgres, so a container killed mid-triage resumes without duplicate LLM spend
 
 ## Tech Stack
@@ -128,14 +128,34 @@ The demo seeds and embeds the runbooks, plants the scenario's deploy events, fir
 
 ## Demo scenarios
 
+Eleven scenarios ship with the simulator, each with its own commit history, deploy events, and
+alert. `--scenario <name>` is the only thing that changes between runs.
+
+```bash
+uv run vigil-sim demo --scenario shared_db_saturation
+```
+
 | Scenario | Alert | Planted culprit | Shows off |
 |---|---|---|---|
-| `bad_deploy` | HighErrorRate | validation removed in a refactor | deploy correlation |
-| `db_migration_lock` | SlowQueries | non-CONCURRENT index build | risky-file scoring |
-| `memory_leak` | HighMemory | unbounded cache, 30h old | time decay vs path match |
-| `config_typo` | CrashLoopBackOff | one-character YAML change | tiny-diff risk weighting |
-| `dependency_bump` | HighLatency | lockfile bump | dependency heuristics |
-| `cert_expiry` | TLSHandshakeErrors | **none exists** | the honest "no culprit found" path |
+| `bad_deploy` | HighErrorRate, checkout, SEV1 | validation removed in a refactor | deploy correlation |
+| `db_migration_lock` | SlowQueries, orders, SEV2 | non-CONCURRENT index build | risky-file scoring |
+| `memory_leak` | HighMemory, inventory, SEV4 | unbounded cache, 30h old | time decay vs path match |
+| `config_typo` | CrashLoopBackOff, checkout, SEV1 | one-character YAML change | tiny-diff risk weighting |
+| `dependency_bump` | HighLatency, orders, SEV2 | lockfile bump | dependency heuristics |
+| `hotfix_regression` | OrderQueryTimeouts, orders, SEV2 | 6-line hotfix disabling a timeout | message signals beating diff size |
+| `partial_revert` | PaymentFailures, checkout, SEV1 | pricing change whose revert is merged but undeployed | a teammate's revert as evidence |
+| `shared_db_saturation` | ConnectionPoolExhausted, payments-db, SEV1 | statement timeout raised to 60s | blast radius through a shared dependency |
+| `auth_key_rotation` | TokenValidationFailures, auth, SEV3 | JWKS rotation that drops the old key | internal service, user-facing fan-out |
+| `cert_expiry` | TLSHandshakeErrors, checkout, SEV1 | **none exists** | the honest "no culprit found" path |
+| `ambiguous_latency` | LatencyBudgetBurn, checkout, SEV2 | **three plausible, none proven** | the confidence floor refusing to guess |
+
+The last five are where the design shows. `partial_revert` ranks a two-hour-old commit above the
+fresher change on top of it, because that fresher change is a `Revert` naming it, merged but never
+deployed. `shared_db_saturation` and `auth_key_rotation` alert on services no user touches and
+still page correctly, with the user-facing dependents named from the service graph. `cert_expiry`
+has no culprit to find, and `ambiguous_latency` has three the scorer cannot separate: the model's
+best guess lands at 0.35 against a 0.4 floor, so the brief names no culprit, keeps every candidate
+with its rationale, and cites the dashboards runbook instead of inventing a root cause.
 
 ## Dashboard
 
@@ -185,13 +205,13 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 ## Development & Testing
 
 ```bash
-# Backend: 70 unit tests, plus suites that need the database container
+# Backend: 93 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
 uv run pytest -m integration      # 2 full-pipeline tests against real Postgres
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
-# Dashboard: 45 tests
+# Dashboard: 51 tests
 cd frontend
 npm run test -- --run
 npm run lint
@@ -201,7 +221,7 @@ npm run build
 
 GitHub Actions runs all of it on every push and pull request, with no API key and no live model calls anywhere.
 
-The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first while `cert_expiry` must rank nothing above the score floor. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly.
+The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first, while `cert_expiry` must rank nothing above the score floor and `ambiguous_latency` must leave three candidates the scorer cannot separate. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly.
 
 ## API Reference
 
@@ -217,7 +237,7 @@ The commit scorer has golden tests with hand-computed expected values, and each 
 
 ## Retrieval quality
 
-Runbook retrieval is regression-tested against real embeddings without spending a single API call. One live Gemini run recorded the vectors for every runbook chunk and every scenario query; those vectors are committed, so CI replays them and measures retrieval itself rather than the SQL plumbing around it.
+Runbook retrieval is regression-tested against real embeddings without spending a single API call. One live Gemini run recorded the vectors for every runbook chunk and for the six scenarios in the eval set; those vectors are committed, so CI replays them and measures retrieval itself rather than the SQL plumbing around it. The later demo scenarios reuse the same runbook corpus and join the eval set once their query vectors are recorded.
 
 Two gates run at the production fetch depth: `hit@3` (the right runbook reaches the brief at all) must be at least 5 of 6, and `rank@1` (it reaches the brief first) at least 4 of 6. `rank@1` exists because `hit@3` alone is blind to the failure actually observed in production, where an unrelated runbook outranked the right one while both sat in the top 3.
 
