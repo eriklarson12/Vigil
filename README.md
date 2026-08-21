@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-150%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-159%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -126,6 +126,10 @@ The demo seeds and embeds the runbooks, plants the scenario's deploy events, fir
 
 `make demo` runs the same thing, and `make test-all` runs every test suite against the local database.
 
+`vigil-sim list` shows recent incidents and `vigil-sim delete <id>` removes one along with its
+alerts, timeline, candidates, postmortem, and graph checkpoints. Deletion is irreversible and
+needs the operator bearer token, so it is useful for clearing a bad demo run off the dashboard.
+
 ## Demo scenarios
 
 Eleven scenarios ship with the simulator, each with its own commit history, deploy events, and
@@ -178,7 +182,7 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 |---|:--:|---|
 | `DATABASE_URL` | ✅ | Postgres with pgvector. Local default is `postgresql://vigil:vigil@localhost:5433/vigil`; production uses the Neon pooled URL |
 | `ALERTMANAGER_WEBHOOK_TOKEN` | ✅ | Bearer token for `POST /webhooks/alertmanager` |
-| `RESUME_TOKEN` | ✅ | Bearer token for the operator endpoints (resume tick, manual resolve) |
+| `RESUME_TOKEN` | ✅ | Bearer token for the operator endpoints (resume tick, manual resolve, delete) |
 | `GEMINI_API_KEY` | | From [AI Studio](https://aistudio.google.com/apikey), free and no card. Leave empty to run on fixtures |
 | `LLM_MODE` | | `auto` (default), `gemini`, or `fake` |
 | `GEMINI_MODEL` | | Generation model (default `gemini-3.6-flash`) |
@@ -209,7 +213,7 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 ```bash
 # Backend: 93 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 2 full-pipeline tests against real Postgres
+uv run pytest -m integration      # 11 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -234,6 +238,7 @@ The commit scorer has golden tests with hand-computed expected values, and each 
 | `GET` | `/api/incidents` | Incident list for the dashboard |
 | `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
 | `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
+| `DELETE` | `/api/incidents/{id}` | Hard-delete one incident with its alerts, timeline, candidates, postmortem, and graph checkpoints (bearer token) |
 | `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, prune (bearer token) |
 | `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 

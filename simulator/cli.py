@@ -1,4 +1,4 @@
-"""vigil-sim — seed | fire | resolve | demo (spec §15).
+"""vigil-sim — seed | fire | resolve | demo | list | delete (spec §15).
 
 Timestamps are rewritten relative to *now* at fire time so the scoring
 time-decay behaves identically no matter when the demo runs.
@@ -63,6 +63,16 @@ def _post(url: str, path: str, body: dict, token: str) -> dict:
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def _delete(url: str, path: str, token: str) -> httpx.Response:
+    return httpx.request(
+        "DELETE", f"{url}{path}", headers={"Authorization": f"Bearer {token}"}, timeout=30.0
+    )
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
 
 async def _seed_async() -> None:
@@ -189,6 +199,70 @@ def demo(
     typer.echo(f"incident:   {url}/api/incidents/{incident['id']}")
     typer.echo("postmortem preview:")
     typer.echo(detail["postmortem"]["markdown"][:600])
+
+
+# `list` and `delete` never build Settings(): the repo-root .env points at
+# production, so the only production surface here is an explicit --url.
+@app.command("list")
+def list_incidents(
+    url: str = typer.Option("http://localhost:8000"),
+    limit: int = typer.Option(20, help="rows to show, newest first"),
+) -> None:
+    """List recent incidents, newest first, to find one to delete."""
+    incidents = httpx.get(f"{url}/api/incidents", timeout=30.0).json()
+    if not incidents:
+        typer.echo("no incidents")
+        return
+    for i in incidents[:limit]:
+        typer.echo(
+            f"  {i['id']}  {i['created_at'][:19]}  {i['service']:<12}"
+            f"  {i['severity'] or '-':<5} {i['status']}"
+        )
+
+
+@app.command()
+def delete(
+    incident_ids: list[str],
+    url: str = typer.Option("http://localhost:8000"),
+    token: str = typer.Option("dev-token", envvar="RESUME_TOKEN"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="skip the confirmation prompt"),
+) -> None:
+    """Hard-delete incidents and every row they own. Irreversible."""
+    if not yes:
+        typer.confirm(
+            f"Hard-delete {_plural(len(incident_ids), 'incident')} from {url}?", abort=True
+        )
+    failed = 0
+    for incident_id in incident_ids:
+        resp = _delete(url, f"/api/incidents/{incident_id}", token)
+        short = incident_id[:8]
+        if resp.status_code == 200:
+            c = resp.json()["counts"]
+            checkpoints = sum(
+                c[t] for t in ("checkpoints", "checkpoint_writes", "checkpoint_blobs")
+            )
+            typer.echo(
+                f"deleted incident {short} ("
+                f"{_plural(c['alerts'], 'alert')}, "
+                f"{_plural(c['incident_events'], 'event')}, "
+                f"{_plural(c['commit_candidates'], 'candidate')}, "
+                f"{_plural(c['postmortems'], 'postmortem')}, "
+                f"{checkpoints} checkpoint rows)"
+            )
+            continue
+        failed += 1
+        if resp.status_code == 401:
+            reason = "unauthorized (check RESUME_TOKEN)"
+        elif resp.status_code == 404:
+            reason = "not found"
+        else:
+            try:
+                reason = resp.json().get("detail", resp.text)
+            except ValueError:  # a 500 can come back as HTML
+                reason = f"HTTP {resp.status_code}"
+        typer.echo(f"skipped incident {short}: {reason}", err=True)
+    if failed:
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
