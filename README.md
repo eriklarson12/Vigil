@@ -237,14 +237,14 @@ The commit scorer has golden tests with hand-computed expected values, and each 
 
 ## Retrieval quality
 
-Runbook retrieval is regression-tested against real embeddings without spending a single API call. One live Gemini run recorded the vectors for every runbook chunk and for the six scenarios in the eval set; those vectors are committed, so CI replays them and measures retrieval itself rather than the SQL plumbing around it. The later demo scenarios reuse the same runbook corpus and join the eval set once their query vectors are recorded.
+Runbook retrieval is regression-tested against real embeddings without spending a single API call. Recorded Gemini vectors for every runbook chunk and every scenario query are committed, so CI replays them and measures retrieval itself rather than the SQL plumbing around it. Recording is incremental: adding a runbook or a scenario embeds only what is new and carries the rest over untouched.
 
-Two gates run at the production fetch depth: `hit@3` (the right runbook reaches the brief at all) must be at least 5 of 6, and `rank@1` (it reaches the brief first) at least 4 of 6. `rank@1` exists because `hit@3` alone is blind to the failure actually observed in production, where an unrelated runbook outranked the right one while both sat in the top 3.
+Two gates run at the production fetch depth across all eleven scenarios: `hit@3` (the right runbook reaches the brief at all) must be at least 10 of 11, and `rank@1` (it reaches the brief first) at least 9 of 11. `rank@1` exists because `hit@3` alone is blind to the failure actually observed in production, where an unrelated runbook outranked the right one while both sat in the top 3.
 
 | Metric | Gate | Current |
 |---|---|---|
-| `hit@3` | 5/6 | **6/6** |
-| `rank@1` | 4/6 | **6/6** |
+| `hit@3` | 10/11 | **11/11** |
+| `rank@1` | 9/11 | **11/11** |
 
 Reproduce with `docker compose up -d db && uv run pytest -m retrieval_live -s`, which prints the ranked runbooks per scenario.
 

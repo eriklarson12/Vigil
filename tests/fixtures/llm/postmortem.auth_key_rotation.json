@@ -18,12 +18,12 @@
     "The deploy-config runbook prescribed the git revert path that was actually used."
   ],
   "went_poorly": [
-    "A rotation runbook exists in principle but the two-deploy sequence was not enforced anywhere.",
+    "The runbook's two-deploy rotation sequence was not enforced anywhere in CI.",
     "The change touched code and published config together, so a config-only rollback was not possible."
   ],
   "action_items": [
     {"description": "Split key rotation into publish-both then switch-signing deploys, enforced in CI.", "owner": "@erik", "priority": "P0"},
     {"description": "Add a verifier smoke test that validates a freshly signed token against a cold JWKS cache.", "owner": "@erik", "priority": "P1"},
-    {"description": "Write an auth runbook section covering key rotation and rollback.", "owner": "on-call", "priority": "P2"}
+    {"description": "Alert when the published JWKS stops containing the kid that auth is signing with.", "owner": "on-call", "priority": "P2"}
   ]
 }

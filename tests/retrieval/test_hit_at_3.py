@@ -8,12 +8,13 @@ tested everywhere, including CI, with no API key.
 Needs Postgres:  docker compose up -d db && uv run pytest -m retrieval_live -s
 
 Two gates, both measured on the production fetch depth:
-  hit@3  >= 5/6 — the right runbook reaches the brief at all
-  rank@1 >= 4/6 — it reaches the brief *first*
+  hit@3  >= 10/11 — the right runbook reaches the brief at all
+  rank@1 >= 9/11  — it reaches the brief *first*
 
 rank@1 exists because hit@3 alone is blind to the failure actually observed in
 production: an unrelated runbook outranking the right one while both sit in the
-top 3. Half the corpus is tagged `checkout`, so TAG_BOOST cannot separate them.
+top 3. Five of the seven runbooks are tagged `checkout`, so TAG_BOOST cannot
+separate them.
 """
 
 import json
@@ -33,9 +34,9 @@ FIXTURES = ROOT / "tests" / "fixtures" / "embeddings"
 RUNBOOKS_DIR = ROOT / "simulator" / "runbooks"
 SCENARIOS_DIR = ROOT / "simulator" / "scenarios"
 
-# Each runbook's opening H2 addresses exactly one scenario's alertname. This is the
-# eval set, not the demo set: scenarios added later reuse these runbooks and are only
-# scored here once their query vectors are recorded and a row is added below.
+# Every demo scenario is scored here. Adding one means recording its query vector
+# (scripts/record_embeddings.py) and adding its row; a scenario with no row is
+# silently unmeasured, which is why the recorded-vs-mapping check below exists.
 EXPECTED_RUNBOOK = {
     "bad_deploy": "checkout-service",
     "cert_expiry": "tls-certificates",
@@ -43,10 +44,15 @@ EXPECTED_RUNBOOK = {
     "db_migration_lock": "orders-database",
     "dependency_bump": "dependency-upgrades",
     "memory_leak": "inventory-service",
+    "ambiguous_latency": "checkout-service",
+    "auth_key_rotation": "auth-sessions",
+    "hotfix_regression": "orders-database",
+    "partial_revert": "checkout-service",
+    "shared_db_saturation": "orders-database",
 }
 
-HIT_AT_3_MIN = 5
-RANK_AT_1_MIN = 4
+HIT_AT_3_MIN = 10
+RANK_AT_1_MIN = 9
 # Diagnostic only: when a runbook misses the production window, re-query deep enough
 # to report where it actually landed instead of just "absent".
 DEEP_FETCH = 50

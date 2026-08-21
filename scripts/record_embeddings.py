@@ -12,6 +12,12 @@ other measures nothing.
 Re-run this after editing a runbook or `build_query_text`: the eval keys chunks
 by content_hash and asserts the recorded query text, so stale fixtures fail loudly
 rather than silently scoring the wrong thing.
+
+Recording is incremental. A chunk whose content_hash is already on file, and a
+scenario whose recorded query_text still matches, are carried over untouched, so
+adding one runbook or one scenario produces a diff of exactly the new vectors
+instead of re-embedding (and re-churning) the whole corpus. Pass --all to force a
+full re-record, which is what a model or dimension change needs.
 """
 
 import asyncio
@@ -42,6 +48,21 @@ def _round(vec: list[float]) -> list[float]:
     return [round(x, PRECISION) for x in vec]
 
 
+def _existing(name: str) -> dict:
+    """Vectors already on file, or {} when the fixture is absent or was recorded
+    under a different model/dims (in which case nothing may be carried over)."""
+    path = OUT_DIR / f"{name}.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    settings = get_settings()
+    if data.get("model") != settings.embedding_model or data.get("dims") != settings.embedding_dims:
+        print(f"  {name}.json recorded at {data.get('model')} @ {data.get('dims')}d"
+              f" — re-recording all of it")
+        return {}
+    return data.get("vectors", {})
+
+
 def _check_norm(label: str, vec: list[float]) -> None:
     norm = math.sqrt(sum(x * x for x in vec))
     if abs(norm - 1.0) > NORM_TOL:
@@ -60,6 +81,10 @@ async def main() -> None:
     if settings.embeddings_mode == "fake":
         raise SystemExit("EMBEDDINGS_MODE=fake — refusing to record fake vectors.")
 
+    force = "--all" in sys.argv
+    kept_chunks = {} if force else _existing("chunks")
+    kept_queries = {} if force else _existing("queries")
+
     embedder = GeminiEmbedder(settings)
 
     chunk_texts: list[str] = []
@@ -67,6 +92,8 @@ async def main() -> None:
     for path in sorted(RUNBOOKS_DIR.glob("*.md")):
         meta, chunks = chunk_markdown(path.read_text(encoding="utf-8"))
         for c in chunks:
+            if c["content_hash"] in kept_chunks:
+                continue
             chunk_texts.append(c["embed_text"])
             chunk_meta.append(
                 {
@@ -83,6 +110,8 @@ async def main() -> None:
     for path in scenarios:
         alert = json.loads(path.read_text(encoding="utf-8"))["alert"]
         text = build_query_text(alert)
+        if kept_queries.get(path.stem, {}).get("query_text") == text:
+            continue
         query_texts.append(text)
         query_meta.append(
             {
@@ -92,22 +121,40 @@ async def main() -> None:
             }
         )
 
-    print(f"embedding {len(chunk_texts)} chunks + {len(query_texts)} queries "
-          f"with {settings.embedding_model} @ {settings.embedding_dims}d…")
-    chunk_vecs = await embedder.embed(chunk_texts)
-    query_vecs = await embedder.embed(query_texts)
+    print(f"carrying over {len(kept_chunks)} chunks + {len(kept_queries)} queries;"
+          f" embedding {len(chunk_texts)} chunks + {len(query_texts)} queries"
+          f" with {settings.embedding_model} @ {settings.embedding_dims}d…")
+    chunk_vecs = await embedder.embed(chunk_texts) if chunk_texts else []
+    query_vecs = await embedder.embed(query_texts) if query_texts else []
 
     header = {"model": settings.embedding_model, "dims": settings.embedding_dims}
 
-    chunks_out: dict = dict(header, vectors={})
+    chunks_out: dict = dict(header, vectors=dict(kept_chunks))
     for m, vec in zip(chunk_meta, chunk_vecs, strict=True):
         _check_norm(f"{m['slug']}#{m['chunk_index']}", vec)
         chunks_out["vectors"][m["content_hash"]] = dict(m, vector=_round(vec))
 
-    queries_out: dict = dict(header, vectors={})
+    queries_out: dict = dict(header, vectors=dict(kept_queries))
     for m, vec in zip(query_meta, query_vecs, strict=True):
         _check_norm(m["scenario"], vec)
         queries_out["vectors"][m["scenario"]] = dict(m, vector=_round(vec))
+
+    # An edited runbook or renamed scenario leaves orphans behind; the eval reads by
+    # content_hash and would never notice, so drop them here.
+    live_hashes = set(kept_chunks) & {
+        c["content_hash"]
+        for path in RUNBOOKS_DIR.glob("*.md")
+        for c in chunk_markdown(path.read_text(encoding="utf-8"))[1]
+    } | {m["content_hash"] for m in chunk_meta}
+    orphans = set(chunks_out["vectors"]) - live_hashes
+    stale_scenarios = set(queries_out["vectors"]) - {p.stem for p in scenarios}
+    for h in orphans:
+        del chunks_out["vectors"][h]
+    for name in stale_scenarios:
+        del queries_out["vectors"][name]
+    if orphans or stale_scenarios:
+        print(f"  dropped {len(orphans)} orphaned chunk vector(s)"
+              f" and {len(stale_scenarios)} stale scenario vector(s)")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for name, data in (("chunks", chunks_out), ("queries", queries_out)):
@@ -116,10 +163,10 @@ async def main() -> None:
         print(f"  wrote {out.relative_to(ROOT)} ({len(data['vectors'])} vectors,"
               f" {out.stat().st_size // 1024} KB)")
 
-    print("\nchunks recorded:")
+    print("\nchunks newly recorded:")
     for m in chunk_meta:
         print(f"  {m['slug']:22} #{m['chunk_index']}  {m['heading_path']}")
-    print("\nqueries recorded:")
+    print("\nqueries newly recorded:")
     for m in query_meta:
         print(f"  {m['scenario']:20} {m['query_text'][:70]}…")
 

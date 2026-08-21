@@ -2,9 +2,9 @@
   "impact_narrative": "92% of token validations are failing, so every new sign-in and every checkout session that needs a fresh token is blocked.",
   "cause_summary": "Commit e1f2a3b4c5 rotated the JWT signing key to kid-2026-08 and removed the previous key from the published JWKS in the same change, so tokens signed with the new key fail validation wherever the old key set is still cached.",
   "runbook_citation": {
-    "slug": "deploy-config",
-    "heading_path": "Deploy & Config Runbook > Rollback procedure",
-    "why": "This is a config rollout; reverting the commit and letting CD redeploy keeps the repository the source of truth."
+    "slug": "auth-sessions",
+    "heading_path": "Auth & Session Runbook > Token validation failures after a key rotation",
+    "why": "Names this exact failure and prescribes reverting the rotation commit rather than hand-editing the key set."
   },
   "next_steps": [
     "Revert e1f2a3b4c5 so the previous key id is published again, then let CD redeploy auth.",
