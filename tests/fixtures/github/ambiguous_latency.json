@@ -6,7 +6,7 @@
       "author": "dev-a",
       "hours_before_alert": 1.5,
       "files": [{"path": "libs/payments/batch.py", "additions": 90, "deletions": 30}],
-      "patch": "--- libs/payments/batch.py\n@@ -12,10 +12,40 @@ async def authorize_all(items):\n-    return await asyncio.gather(*[authorize(i) for i in items])\n+    async with Batcher(window_ms=250) as b:      # adds up to 250ms per call\n+        return await b.submit_all(items)"
+      "patch": "--- libs/payments/batch.py\n@@ -12,10 +12,40 @@ async def authorize_all(items):\n-    return await asyncio.gather(*[authorize(i) for i in items])\n+    async with Batcher(**settings.payments_batch) as b:\n+        return await b.submit_all(items)\n@@ +58,30 @@\n+class Batcher:\n+    ..."
     },
     {
       "sha": "dd33ee44ff",
@@ -14,7 +14,7 @@
       "author": "dev-b",
       "hours_before_alert": 2.0,
       "files": [{"path": "services/checkout/http.py", "additions": 60, "deletions": 45}],
-      "patch": "--- services/checkout/http.py\n@@ -8,15 +8,30 @@\n-    async with httpx.AsyncClient() as c:\n+    c = _shared_client()          # pool limits unchanged from the per-request default\n+    return await c.post(url, json=body)"
+      "patch": "--- services/checkout/http.py\n@@ -8,15 +8,30 @@\n-    async with httpx.AsyncClient() as c:\n-        return await c.post(url, json=body)\n+    c = _shared_client()\n+    return await c.post(url, json=body)\n@@ +40,15 @@\n+@lru_cache\n+def _shared_client():\n+    return httpx.AsyncClient(**settings.http_client)"
     },
     {
       "sha": "5566778899",

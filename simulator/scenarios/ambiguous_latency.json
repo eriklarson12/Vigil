@@ -9,7 +9,7 @@
     },
     "annotations": {
       "summary": "Checkout p99 latency 2.4s, burning the latency budget 6x",
-      "description": "p99 on POST /api/checkout/pay drifted from 780ms to 2.4s over an hour. Error rate is normal, no deploy in the window, three unrelated changes touch the payment path."
+      "description": "p99 on POST /api/checkout/pay drifted from 780ms to 2.4s over three hours, starting about 40 minutes before the earliest change in the window shipped. Error rate is normal and no deploy went out. A replay against the previous build reproduces the same p99, and the payments provider dashboard shows their own authorization latency up 900ms over the same period."
     },
     "fingerprint": "fp-ambiguous-latency-001"
   },

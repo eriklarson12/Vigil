@@ -4,24 +4,24 @@
       "sha": "aa11bb22cc",
       "rank": 1,
       "confidence": 0.35,
-      "rationale": "Batcher(window_ms=250) in libs/payments/batch.py adds up to 250ms per authorization (@@ -12,10 +12,40), which is real but roughly a sixth of the 1.6s regression, and the alert reports no change in error rate. Plausible contributor, not a demonstrated cause.",
+      "rationale": "authorize_all in libs/payments/batch.py moves from asyncio.gather to a Batcher whose window comes from settings.payments_batch (@@ -12,10 +12,40), so its cost is not visible in the diff. It also shipped 40 minutes after the p99 drift began, and the replay against the previous build reproduces the same latency. Plausible mechanism, contradicted by the timeline.",
       "suggested_action": "investigate"
     },
     {
       "sha": "dd33ee44ff",
       "rank": 2,
       "confidence": 0.3,
-      "rationale": "The shared httpx client in services/checkout/http.py keeps the default connection limits while serving all requests, which can queue under load; nothing in the diff pins it to the observed p99 shape.",
+      "rationale": "services/checkout/http.py swaps a per-request httpx client for a cached shared one configured from settings.http_client. A shared client can queue behind its connection limits, but the limits are not in the diff and this landed after the drift started.",
       "suggested_action": "investigate"
     },
     {
       "sha": "5566778899",
       "rank": 3,
       "confidence": 0.22,
-      "rationale": "Doubling workers 8 to 16 in deploy/checkout.yaml raises concurrency against the same downstream pools, which can increase queueing latency, but the manifest change was not part of a deploy in the window.",
+      "rationale": "Doubling workers 8 to 16 in deploy/checkout.yaml raises concurrency against the same downstream pools, but the manifest change was not part of a deploy in the window and postdates the drift.",
       "suggested_action": "investigate"
     }
   ],
   "likely_culprit_sha": null,
-  "no_culprit_reason": "Three changes touch the payment path and none explains a 1.6s p99 regression on its own; the top candidate reaches 0.35 confidence, below the 0.4 floor for naming a culprit."
+  "no_culprit_reason": "The p99 drift began about 40 minutes before the earliest change in the window, a replay against the previous build reproduces it, and the payments provider reports their own authorization latency up 900ms. The evidence points outside this repository; the top candidate reaches 0.35 confidence, below the 0.4 floor for naming a culprit."
 }

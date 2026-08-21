@@ -147,15 +147,17 @@ uv run vigil-sim demo --scenario shared_db_saturation
 | `shared_db_saturation` | ConnectionPoolExhausted, payments-db, SEV1 | statement timeout raised to 60s | blast radius through a shared dependency |
 | `auth_key_rotation` | TokenValidationFailures, auth, SEV3 | JWKS rotation that drops the old key | internal service, user-facing fan-out |
 | `cert_expiry` | TLSHandshakeErrors, checkout, SEV1 | **none exists** | the honest "no culprit found" path |
-| `ambiguous_latency` | LatencyBudgetBurn, checkout, SEV2 | **three plausible, none proven** | the confidence floor refusing to guess |
+| `ambiguous_latency` | LatencyBudgetBurn, checkout, SEV2 | **three plausible, none proven** | declining to name a culprit |
 
 The last five are where the design shows. `partial_revert` ranks a two-hour-old commit above the
 fresher change on top of it, because that fresher change is a `Revert` naming it, merged but never
 deployed. `shared_db_saturation` and `auth_key_rotation` alert on services no user touches and
 still page correctly, with the user-facing dependents named from the service graph. `cert_expiry`
-has no culprit to find, and `ambiguous_latency` has three the scorer cannot separate: the model's
-best guess lands at 0.35 against a 0.4 floor, so the brief names no culprit, keeps every candidate
-with its rationale, and cites the dashboards runbook instead of inventing a root cause.
+has no culprit to find, and in `ambiguous_latency` the drift predates every change in the window
+and the payments provider reports its own latency regression, so the three candidates stay ranked
+and unaccused: the brief names no culprit, keeps every rationale, and cites the dashboards runbook
+instead of inventing a root cause. The 0.4 confidence floor is the backstop when the model is less
+sure of that than it should be.
 
 ## Dashboard
 
