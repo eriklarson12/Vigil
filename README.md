@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-159%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-160%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -213,7 +213,7 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 ```bash
 # Backend: 93 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 11 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 12 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -227,7 +227,7 @@ npm run build
 
 GitHub Actions runs all of it on every push and pull request, with no API key and no live model calls anywhere.
 
-The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first, while `cert_expiry` must rank nothing above the score floor and `ambiguous_latency` must leave three candidates the scorer cannot separate. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly.
+The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first, while `cert_expiry` must rank nothing above the score floor and `ambiguous_latency` must leave three candidates the scorer cannot separate. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly. A chaos test kills the triage graph mid-flight, while it is parked inside the commit ranking call, then resumes it through the same stale-claim reclaim a restarted container uses, and asserts the incident posts exactly one brief, is charged for exactly two model calls, and ends in the same state as a run that was never killed.
 
 ## API Reference
 
