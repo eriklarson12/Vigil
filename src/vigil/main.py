@@ -16,17 +16,12 @@ from vigil.graph.runner import Runner
 from vigil.impact.catalog import ServiceCatalog
 from vigil.ingest.webhook import router as webhook_router
 from vigil.llm.client import get_llm_client
+from vigil.logging_utils import configure_logging
 from vigil.rag.embed import get_embedder
 from vigil.slack.interactions import router as slack_router
 from vigil.slack.sender import SlackSender
 
-structlog.configure(
-    processors=[
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.JSONRenderer(),
-    ]
-)
+configure_logging()
 log = structlog.get_logger()
 
 
