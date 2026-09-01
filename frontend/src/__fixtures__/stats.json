@@ -1,0 +1,90 @@
+{
+    "overall": {
+        "open": 0,
+        "resolved": 2,
+        "mtta_n": 2,
+        "mttr_n": 2,
+        "mtta_p50": 0.0189305,
+        "mtta_p90": 0.0201461,
+        "mttr_p50": 2.040299,
+        "mttr_p90": 2.0403046000000002
+    },
+    "by_severity": [
+        {
+            "severity": "SEV1",
+            "open": 0,
+            "resolved": 2,
+            "mtta_p50": 0.0189305,
+            "mtta_p90": 0.0201461,
+            "mttr_p50": 2.040299,
+            "mttr_p90": 2.0403046000000002
+        }
+    ],
+    "by_week": [
+        {
+            "week": "2026-07-13",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-07-20",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-07-27",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-08-03",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-08-10",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-08-17",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-08-24",
+            "incidents": 0,
+            "mtta_p50": null,
+            "mttr_p50": null
+        },
+        {
+            "week": "2026-08-31",
+            "incidents": 2,
+            "mtta_p50": 0.0189305,
+            "mttr_p50": 2.040299
+        }
+    ],
+    "triage": {
+        "triaged": 2,
+        "culprit_named": 1,
+        "scored_p50": 4,
+        "chunks_p50": 4,
+        "degraded": 0,
+        "degraded_nodes": []
+    },
+    "llm": {
+        "triage_mean": 1.5,
+        "total_mean": 2.5,
+        "total_max": 3,
+        "over_ceiling": 0,
+        "today_used": 0,
+        "ceiling": 3,
+        "daily_budget": 200
+    }
+}

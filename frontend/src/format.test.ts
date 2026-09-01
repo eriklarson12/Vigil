@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SEVERITY_COLOR,
   formatDuration,
+  formatSeconds,
   parseMrkdwn,
   parseStamp,
   percent,
@@ -153,5 +154,25 @@ describe('safeUrl', () => {
   it('is undefined for missing or unparseable input', () => {
     expect(safeUrl(undefined)).toBeUndefined()
     expect(safeUrl('')).toBeUndefined()
+  })
+})
+
+describe('formatSeconds', () => {
+  it('walks the same unit ladder as formatDuration', () => {
+    expect(formatSeconds(0)).toBe('0s')
+    expect(formatSeconds(40)).toBe('40s')
+    expect(formatSeconds(59.4)).toBe('59s')
+    expect(formatSeconds(59.6)).toBe('1m 0s') // rounds before the ladder, as formatDuration does
+    expect(formatSeconds(60)).toBe('1m 0s')
+    expect(formatSeconds(900)).toBe('15m 0s')
+    expect(formatSeconds(3600)).toBe('1h 0m')
+    expect(formatSeconds(90061)).toBe('1d 1h')
+  })
+
+  it('renders a missing sample as the placeholder, never as zero', () => {
+    // An empty percentile means "nothing briefed yet"; 0s would read as instant.
+    expect(formatSeconds(null)).toBe('—')
+    expect(formatSeconds(undefined)).toBe('—')
+    expect(formatSeconds(Number.NaN)).toBe('—')
   })
 })

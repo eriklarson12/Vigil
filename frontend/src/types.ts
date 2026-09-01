@@ -94,3 +94,68 @@ export interface SlackBriefPayload {
   text: string
   attachments?: Array<{ color?: string; blocks: SlackBlock[] }>
 }
+
+// --- GET /api/stats (roadmap R8) --------------------------------------------
+// Every duration is seconds; every percentile is null when the sample is empty,
+// which is a real state (no incident has been briefed yet), not an error.
+
+export interface DurationStats {
+  open: number
+  resolved: number
+  mtta_n: number
+  mttr_n: number
+  mtta_p50: number | null
+  mtta_p90: number | null
+  mttr_p50: number | null
+  mttr_p90: number | null
+}
+
+export interface SeverityStats {
+  severity: Severity | null
+  open: number
+  resolved: number
+  mtta_p50: number | null
+  mtta_p90: number | null
+  mttr_p50: number | null
+  mttr_p90: number | null
+}
+
+/** Always eight buckets. An empty week keeps its slot with `incidents: 0`. */
+export interface WeekStats {
+  week: string
+  incidents: number
+  mtta_p50: number | null
+  mttr_p50: number | null
+}
+
+export interface TriageStats {
+  triaged: number
+  culprit_named: number
+  scored_p50: number | null
+  chunks_p50: number | null
+  degraded: number
+  degraded_nodes: Array<{ node: string; count: number }>
+}
+
+/**
+ * `total_*` counts the postmortem call, which lands on a separate graph and so is
+ * absent from the triage payload. The ceiling governs that sum, so `over_ceiling`
+ * is the number that must stay at zero.
+ */
+export interface LlmStats {
+  triage_mean: number | null
+  total_mean: number | null
+  total_max: number | null
+  over_ceiling: number
+  today_used: number
+  ceiling: number
+  daily_budget: number
+}
+
+export interface Stats {
+  overall: DurationStats
+  by_severity: SeverityStats[]
+  by_week: WeekStats[]
+  triage: TriageStats
+  llm: LlmStats
+}
