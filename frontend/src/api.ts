@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { IncidentDetail, IncidentSummary } from './types'
+import type { IncidentDetail, IncidentSummary, Stats } from './types'
 
 export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -14,6 +14,8 @@ export const fetchIncidents = (signal?: AbortSignal) =>
 
 export const fetchIncident = (id: string, signal?: AbortSignal) =>
   getJson<IncidentDetail>(`/api/incidents/${id}`, signal)
+
+export const fetchStats = (signal?: AbortSignal) => getJson<Stats>('/api/stats', signal)
 
 export interface PollResult<T> {
   data: T | null

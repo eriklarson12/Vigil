@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-167%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-191%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -165,12 +165,13 @@ sure of that than it should be.
 
 ## Dashboard
 
-A read-only React view over the same two endpoints the API already served ([`frontend/`](frontend/)):
+A read-only React view over the endpoints the API already served ([`frontend/`](frontend/)):
 
 - **Incident list:** severity, service, status, duration, and postmortem indicator, polled every 10 seconds
 - **Commit candidates:** every candidate's feature scores render as a stacked contribution bar on a shared 0 to 1 scale, so you can see *why* one commit outranked the rest; expanding a row shows the raw numbers, the model's rationale, and the changed files, and candidates that failed the relevance gate are marked `gated ×0.3`
 - **Slack brief:** the exact Block Kit payload that was posted, rendered in the browser
 - **Postmortem:** the generated markdown
+- **Stats:** MTTA (alert to brief) and MTTR (alert to resolved) at p50 and p90, split by severity, with an eight-week trend of median time to brief. Alongside them the numbers that keep the rest of this README honest: how often triage names a culprit rather than shrugging, which nodes degraded, and how many model calls an incident actually costs against the ceiling of three
 
 Try `--scenario cert_expiry` to see the state where nothing scores above the floor and Vigil says so instead of guessing.
 
@@ -213,11 +214,11 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 ```bash
 # Backend: 100 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 12 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 25 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
-# Dashboard: 51 tests
+# Dashboard: 62 tests
 cd frontend
 npm run test -- --run
 npm run lint
@@ -237,6 +238,7 @@ The commit scorer has golden tests with hand-computed expected values, and each 
 | `POST` | `/slack/interactions` | Slack "Mark resolved" button, signature-verified |
 | `GET` | `/api/incidents` | Incident list for the dashboard |
 | `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
+| `GET` | `/api/stats` | MTTA, MTTR, triage quality, and model spend, computed on read |
 | `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
 | `DELETE` | `/api/incidents/{id}` | Hard-delete one incident with its alerts, timeline, candidates, postmortem, and graph checkpoints (bearer token) |
 | `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, prune (bearer token) |

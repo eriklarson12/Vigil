@@ -71,6 +71,22 @@ export function formatDuration(from: string, to: string | null, now: Date = new 
   return `${Math.floor(hours / 24)}d ${hours % 24}h${suffix}`
 }
 
+/**
+ * Same unit ladder as formatDuration, for the /api/stats numbers, which arrive as
+ * seconds rather than as a pair of stamps. null means "no sample yet", which is a
+ * real state on an empty database and must not render as 0s.
+ */
+export function formatSeconds(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return '—'
+  const total = Math.max(0, Math.round(seconds))
+  if (total < 60) return `${total}s`
+  const minutes = Math.floor(total / 60)
+  if (minutes < 60) return `${minutes}m ${total % 60}s`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ${minutes % 60}m`
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`
+}
+
 export function shortSha(sha: string, length = 10): string {
   return sha.slice(0, length)
 }
