@@ -1,27 +1,27 @@
 {
   "verdicts": [
     {
-      "sha": "9a8b7c6d5e",
+      "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
       "rank": 1,
       "confidence": 0.88,
-      "rationale": "quote_total in services/checkout/pricing.py now returns dynamic_price(cart, customer) behind the dynamic_pricing flag (@@ -18,6 +18,14), and the price is recomputed at charge time, so the quote and the charge disagree — exactly the 'price mismatch between quote and charge' failures. It shipped in the deploy 35 minutes before the alert, and a teammate already merged a revert of it (4f3e2d1c0b) that has not been deployed.",
+      "rationale": "quote_total in services/checkout/pricing.py now returns dynamic_price(cart, customer) behind the dynamic_pricing flag (@@ -18,6 +18,14), and the price is recomputed at charge time, so the quote and the charge disagree \u2014 exactly the 'price mismatch between quote and charge' failures. It shipped in the deploy 35 minutes before the alert, and a teammate already merged a revert of it (8957606ede) that has not been deployed.",
       "suggested_action": "rollback_deploy"
     },
     {
-      "sha": "4f3e2d1c0b",
+      "sha": "8957606ede71010d026d9abddb6407fd51b98043",
       "rank": 2,
       "confidence": 0.05,
-      "rationale": "This is the revert of 9a8b7c6d5e and is the intended fix, not the cause; it is merged on main but absent from every deploy event in the window, so production is still running the reverted code.",
+      "rationale": "This is the revert of 02c238690b and is the intended fix, not the cause; it is merged on main but absent from every deploy event in the window, so production is still running the reverted code.",
       "suggested_action": "investigate"
     },
     {
-      "sha": "2323fedc45",
+      "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
       "rank": 3,
       "confidence": 0.01,
       "rationale": "Only changes CI cache keys in .github/workflows/ci.yml; it cannot affect runtime pricing.",
       "suggested_action": "investigate"
     }
   ],
-  "likely_culprit_sha": "9a8b7c6d5e",
+  "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
   "no_culprit_reason": null
 }

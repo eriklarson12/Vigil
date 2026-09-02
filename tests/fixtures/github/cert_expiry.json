@@ -2,10 +2,10 @@
   "culprit": null,
   "commits": [
     {
-      "sha": "1212aaaa34",
+      "sha": "cd41a49c01ecc29a25449d4493ac19ea055e3a66",
       "message": "docs: update onboarding guide",
       "author": "dev-a",
-      "hours_before_alert": 5,
+      "hours_before_alert": 5.0002,
       "files": [
         {
           "path": "docs/onboarding.md",
@@ -13,13 +13,13 @@
           "deletions": 4
         }
       ],
-      "patch": "--- docs/onboarding.md\n@@ documentation only @@"
+      "patch": "--- docs/onboarding.md\n@@ -1,7 +1,33 @@\n-- Onboarding note 235: see the runbook for details.\n-- Onboarding note 236: see the runbook for details.\n-- Onboarding note 237: see the runbook for details.\n-- Onboarding note 238: see the runbook for details.\n+- Onboarding note 2053: see the runbook for details.\n+- Onboarding note 2054: see the runbook for details.\n+- Onboarding note 2055: see the runbook for details.\n+- Onboarding note 2056: see the runbook for details.\n+- Onboarding note 2057: see the runbook for details.\n+- Onboarding note 2058: see the runbook for details.\n+- Onboarding note 2059: see the runbook for details.\n+- Onboarding note 2060: see the runbook for details.\n+- Onboarding note 2061: see the runbook for details.\n+- Onboarding note 2062: see the runbook for details.\n+- Onboarding note 2063: see the runbook for details.\n+- Onboarding note 2064: see the runbook for details.\n+- Onboarding note 2065: see the runbook for details.\n+- Onboarding note 2066: see the runbook for details.\n+- Onboarding note 2067: see the runbook for details.\n+- Onboarding note 2068: see the runbook for details.\n+- Onboarding note 2069: see the runbook for details.\n+- Onboarding note 2070: see the runbook for details.\n+- Onboarding note 2071: see the runbook for details.\n+- Onboarding note 2072: see the runbook for details.\n+- Onboarding note 2073: see the runbook for details.\n+- Onboarding note 2074: see the runbook for details.\n+- Onboarding note 2075: see the runbook for details.\n+- Onboarding note 2076: see the runbook for details.\n+- Onboarding note 2077: see the runbook for details.\n+- Onboarding note 2078: see the runbook for details.\n+- Onboarding note 2079: see the runbook for details.\n+- Onboarding note 2080: see the runbook for details.\n+- Onboarding note 2081: see the runbook for details.\n+- Onboarding note 2082: see the runbook for details.\n - Onboarding note 239: see the runbook for details.\n - Onboarding note 240: see the runbook for details.\n - Onboarding note 241: see the runbook for details."
     },
     {
-      "sha": "3434bbbb56",
+      "sha": "6d9970a5bcc7b4747b4b6312b1deedb95c8b2a96",
       "message": "test: add orders repository tests",
       "author": "dev-b",
-      "hours_before_alert": 8,
+      "hours_before_alert": 8.0002,
       "files": [
         {
           "path": "services/orders/tests/test_repo.py",
@@ -27,13 +27,13 @@
           "deletions": 0
         }
       ],
-      "patch": "--- services/orders/tests/test_repo.py\n@@ tests only @@"
+      "patch": "--- services/orders/tests/test_repo.py\n@@ -0,0 +1,90 @@\n+        metrics.increment('test_repo.miss', tags={'shard': 1963})\n+    log.debug('test_repo.step', step=1964, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1965')\n+    result_1966 = await backend.fetch(key=f'test_repo:1966')\n+    if result_1967 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1968})\n+    log.debug('test_repo.step', step=1969, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1970')\n+    result_1971 = await backend.fetch(key=f'test_repo:1971')\n+    if result_1972 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1973})\n+    log.debug('test_repo.step', step=1974, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1975')\n+    result_1976 = await backend.fetch(key=f'test_repo:1976')\n+    if result_1977 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1978})\n+    log.debug('test_repo.step', step=1979, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1980')\n+    result_1981 = await backend.fetch(key=f'test_repo:1981')\n+    if result_1982 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1983})\n+    log.debug('test_repo.step', step=1984, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1985')\n+    result_1986 = await backend.fetch(key=f'test_repo:1986')\n+    if result_1987 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1988})\n+    log.debug('test_repo.step', step=1989, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1990')\n+    result_1991 = await backend.fetch(key=f'test_repo:1991')\n+    if result_1992 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1993})\n+    log.debug('test_repo.step', step=1994, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_1995')\n+    result_1996 = await backend.fetch(key=f'test_repo:1996')\n+    if result_1997 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 1998})\n+    log.debug('test_repo.step', step=1999, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2000')\n+    result_2001 = await backend.fetch(key=f'test_repo:2001')\n+    if result_2002 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2003})\n+    log.debug('test_repo.step', step=2004, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2005')\n+    result_2006 = await backend.fetch(key=f'test_repo:2006')\n+    if result_2007 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2008})\n+    log.debug('test_repo.step', step=2009, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2010')\n+    result_2011 = await backend.fetch(key=f'test_repo:2011')\n+    if result_2012 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2013})\n+    log.debug('test_repo.step', step=2014, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2015')\n+    result_2016 = await backend.fetch(key=f'test_repo:2016')\n+    if result_2017 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2018})\n+    log.debug('test_repo.step', step=2019, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2020')\n+    result_2021 = await backend.fetch(key=f'test_repo:2021')\n+    if result_2022 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2023})\n+    log.debug('test_repo.step', step=2024, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2025')\n+    result_2026 = await backend.fetch(key=f'test_repo:2026')\n+    if result_2027 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2028})\n+    log.debug('test_repo.step', step=2029, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2030')\n+    result_2031 = await backend.fetch(key=f'test_repo:2031')\n+    if result_2032 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2033})\n+    log.debug('test_repo.step', step=2034, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2035')\n+    result_2036 = await backend.fetch(key=f'test_repo:2036')\n+    if result_2037 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2038})\n+    log.debug('test_repo.step', step=2039, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2040')\n+    result_2041 = await backend.fetch(key=f'test_repo:2041')\n+    if result_2042 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2043})\n+    log.debug('test_repo.step', step=2044, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2045')\n+    result_2046 = await backend.fetch(key=f'test_repo:2046')\n+    if result_2047 is None:  # cache miss on the test_repo path\n+        metrics.increment('test_repo.miss', tags={'shard': 2048})\n+    log.debug('test_repo.step', step=2049, elapsed=timer.elapsed_ms())\n+    test_repo_span = tracer.start_span('test_repo.step_2050')\n+    result_2051 = await backend.fetch(key=f'test_repo:2051')\n+    if result_2052 is None:  # cache miss on the test_repo path"
     },
     {
-      "sha": "5656cccc78",
+      "sha": "3431f61574f0c9ad129fec669dc3efec581830ca",
       "message": "feat: inventory reorder threshold",
       "author": "dev-c",
-      "hours_before_alert": 22,
+      "hours_before_alert": 22.0002,
       "files": [
         {
           "path": "services/inventory/reorder.py",
@@ -41,13 +41,13 @@
           "deletions": 3
         }
       ],
-      "patch": "--- services/inventory/reorder.py\n@@ inventory logic @@"
+      "patch": "--- services/inventory/reorder.py\n@@ -1,6 +1,48 @@\n-    result_211 = await backend.fetch(key=f'reorder:211')\n-    if result_212 is None:  # cache miss on the reorder path\n-        metrics.increment('reorder.miss', tags={'shard': 213})\n+        metrics.increment('reorder.miss', tags={'shard': 1918})\n+    log.debug('reorder.step', step=1919, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1920')\n+    result_1921 = await backend.fetch(key=f'reorder:1921')\n+    if result_1922 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1923})\n+    log.debug('reorder.step', step=1924, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1925')\n+    result_1926 = await backend.fetch(key=f'reorder:1926')\n+    if result_1927 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1928})\n+    log.debug('reorder.step', step=1929, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1930')\n+    result_1931 = await backend.fetch(key=f'reorder:1931')\n+    if result_1932 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1933})\n+    log.debug('reorder.step', step=1934, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1935')\n+    result_1936 = await backend.fetch(key=f'reorder:1936')\n+    if result_1937 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1938})\n+    log.debug('reorder.step', step=1939, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1940')\n+    result_1941 = await backend.fetch(key=f'reorder:1941')\n+    if result_1942 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1943})\n+    log.debug('reorder.step', step=1944, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1945')\n+    result_1946 = await backend.fetch(key=f'reorder:1946')\n+    if result_1947 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1948})\n+    log.debug('reorder.step', step=1949, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1950')\n+    result_1951 = await backend.fetch(key=f'reorder:1951')\n+    if result_1952 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1953})\n+    log.debug('reorder.step', step=1954, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1955')\n+    result_1956 = await backend.fetch(key=f'reorder:1956')\n+    if result_1957 is None:  # cache miss on the reorder path\n+        metrics.increment('reorder.miss', tags={'shard': 1958})\n+    log.debug('reorder.step', step=1959, elapsed=timer.elapsed_ms())\n+    reorder_span = tracer.start_span('reorder.step_1960')\n+    result_1961 = await backend.fetch(key=f'reorder:1961')\n+    if result_1962 is None:  # cache miss on the reorder path\n     log.debug('reorder.step', step=214, elapsed=timer.elapsed_ms())\n     reorder_span = tracer.start_span('reorder.step_215')\n     result_216 = await backend.fetch(key=f'reorder:216')"
     },
     {
-      "sha": "7878dddd90",
+      "sha": "20ec3fc9e777743b09918da1f6db8408cb363ab6",
       "message": "chore: tidy gitignore",
       "author": "dev-d",
-      "hours_before_alert": 40,
+      "hours_before_alert": 40.0002,
       "files": [
         {
           "path": ".gitignore",
@@ -55,7 +55,7 @@
           "deletions": 0
         }
       ],
-      "patch": "--- .gitignore\n@@ +2 lines @@"
+      "patch": "--- .gitignore\n@@ -0,0 +1,2 @@\n+.gitignore entry 1916\n+.gitignore entry 1917"
     }
   ]
 }

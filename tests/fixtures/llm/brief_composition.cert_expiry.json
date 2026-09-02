@@ -1,6 +1,6 @@
 {
   "impact_narrative": "All TLS clients hitting checkout ingress are failing handshakes, blocking roughly 1,200 purchase attempts per minute.",
-  "cause_summary": "No recent commit plausibly explains this — the certificate itself has expired ('certificate has expired' in client errors), which is an infrastructure expiry, not a code change.",
+  "cause_summary": "No recent commit plausibly explains this \u2014 the certificate itself has expired ('certificate has expired' in client errors), which is an infrastructure expiry, not a code change.",
   "runbook_citation": {
     "slug": "tls-certificates",
     "heading_path": "TLS Certificate Runbook > Expired certificate on ingress",

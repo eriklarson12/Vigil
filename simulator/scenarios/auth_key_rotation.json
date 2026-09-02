@@ -16,7 +16,9 @@
   "deploys": [
     {
       "service": "auth",
-      "commit_shas": ["e1f2a3b4c5"],
+      "commit_shas": [
+        "ebe49dee5046845477a942d2a40b72b8919588ff"
+      ],
       "minutes_before_alert": 15
     }
   ]

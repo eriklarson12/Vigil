@@ -1,274 +1,274 @@
 {
-  "incident": {
-    "id": "62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
-    "service": "checkout",
-    "title": "HighErrorRate on checkout",
-    "severity": "SEV1",
-    "status": "postmortem_done",
-    "slack_message_ts": "mock-62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
-    "resolution_source": "alertmanager",
-    "created_at": "2026-08-19 22:15:47.137894+00:00",
-    "resolved_at": "2026-08-19 22:15:49.182361+00:00"
-  },
-  "events": [
-    {
-      "event_type": "brief_posted",
-      "payload": {
-        "slack_payload": {
-          "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 HighErrorRate",
-          "attachments": [
-            {
-              "color": "#E01E5A",
-              "blocks": [
-                {
-                  "text": {
-                    "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 HighErrorRate",
-                    "type": "plain_text"
-                  },
-                  "type": "header"
-                },
-                {
-                  "text": {
-                    "text": "*Impact*\nCheckout errors are likely blocking roughly 1,200 purchase attempts per minute while the error rate stays at 8%.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Likely culprit:* <https://github.com/OWNER/vigil-demo-shop/commit/a1b2c3d4e5|`a1b2c3d4e5`>  \u2593\u2593\u2593\u2593\u2591 86%\n_The diff removes the IntentState.REQUIRES_CONFIRMATION validation in confirm_payment (services/checkout/handlers/payment.py, -3 lines at @@ -41), with a comment deferring validation to middleware that is not present in this deploy. Unvalidated intents reaching gateway.confirm matches the 'payment intent state invalid' 500s, and the commit shipped in the deploy 20 minutes before the alert._\n*Suggested action:* rollback deploy\nCommit a1b2c3d4e5 removed payment-intent state validation from confirm_payment and shipped in the deploy 20 minutes before the alert; unvalidated intents now fail at the gateway with 'payment intent state invalid'.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Runbook:* `checkout-service` \u2192 Checkout Service Runbook > High error rate after a deploy\n_Covers rollback of a bad checkout deploy, which matches the suspected cause._",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Next steps*\n1. Roll back the checkout deploy containing a1b2c3d4e5 (runbook section has the exact command).\n2. Confirm 5xx rate returns to baseline (<0.5%) on the checkout dashboard.\n3. Re-land the refactor with the middleware validation actually enabled.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "text": "incident `62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c` \u00b7 started 2026-08-19T22:15:47.113966+00:00",
-                      "type": "mrkdwn"
-                    }
-                  ]
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "text": {
-                        "text": "Mark resolved",
-                        "type": "plain_text"
-                      },
-                      "type": "button",
-                      "style": "primary",
-                      "value": "62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
-                      "action_id": "resolve_incident"
-                    },
-                    {
-                      "url": "http://localhost:5173/incidents/62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
-                      "text": {
-                        "text": "Dashboard",
-                        "type": "plain_text"
-                      },
-                      "type": "button"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "created_at": "2026-08-19 22:15:47.164626+00:00"
-    },
-    {
-      "event_type": "triage_finalized",
-      "payload": {
-        "chunks": 4,
-        "errors": {},
-        "scored": 5,
-        "culprit": "a1b2c3d4e5",
+    "incident": {
+        "id": "6ae1401c-6682-42f2-b043-b48b950da714",
+        "service": "checkout",
+        "title": "HighErrorRate on checkout",
         "severity": "SEV1",
-        "llm_calls": 2
-      },
-      "created_at": "2026-08-19 22:15:47.166968+00:00"
+        "status": "postmortem_done",
+        "slack_message_ts": "mock-6ae1401c-6682-42f2-b043-b48b950da714",
+        "resolution_source": "alertmanager",
+        "created_at": "2026-09-02 05:44:52.008529+00:00",
+        "resolved_at": "2026-09-02 05:44:54.045562+00:00"
     },
-    {
-      "event_type": "resolved",
-      "payload": {
-        "source": "alertmanager"
-      },
-      "created_at": "2026-08-19 22:15:49.183511+00:00"
-    },
-    {
-      "event_type": "postmortem_posted",
-      "payload": {
-        "slack_payload": {
-          "text": "Postmortem for incident 62cc37ee-73bb-46bc-8bb8-ec00bb3ff61c",
-          "blocks": [
-            {
-              "text": {
-                "text": "\ud83d\udcdd Postmortem",
-                "type": "plain_text"
-              },
-              "type": "header"
+    "events": [
+        {
+            "event_type": "brief_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 HighErrorRate",
+                    "attachments": [
+                        {
+                            "color": "#E01E5A",
+                            "blocks": [
+                                {
+                                    "text": {
+                                        "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 HighErrorRate",
+                                        "type": "plain_text"
+                                    },
+                                    "type": "header"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Impact*\nCheckout errors are likely blocking roughly 1,200 purchase attempts per minute while the error rate stays at 8%.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Likely culprit:* <https://github.com/eriklarson12/vigil-demo-shop/commit/71cd87314d4ab16755b3b8f721372a5b1e1fdab1|`71cd87314d`>  \u2593\u2593\u2593\u2593\u2591 86%\n_The diff removes the IntentState.REQUIRES_CONFIRMATION validation in confirm_payment (services/checkout/handlers/payment.py, -3 lines at @@ -41), with a comment deferring validation to middleware that is not present in this deploy. Unvalidated intents reaching gateway.confirm matches the 'payment intent state invalid' 500s, and the commit shipped in the deploy 20 minutes before the alert._\n*Suggested action:* rollback deploy\nCommit 71cd87314d removed payment-intent state validation from confirm_payment and shipped in the deploy 20 minutes before the alert; unvalidated intents now fail at the gateway with 'payment intent state invalid'.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Runbook:* `checkout-service` \u2192 Checkout Service Runbook > High error rate after a deploy\n_Covers rollback of a bad checkout deploy, which matches the suspected cause._",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Next steps*\n1. Roll back the checkout deploy containing 71cd87314d (runbook section has the exact command).\n2. Confirm 5xx rate returns to baseline (<0.5%) on the checkout dashboard.\n3. Re-land the refactor with the middleware validation actually enabled.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "type": "context",
+                                    "elements": [
+                                        {
+                                            "text": "incident `6ae1401c-6682-42f2-b043-b48b950da714` \u00b7 started 2026-09-02T05:44:51.975115+00:00",
+                                            "type": "mrkdwn"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "actions",
+                                    "elements": [
+                                        {
+                                            "text": {
+                                                "text": "Mark resolved",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button",
+                                            "style": "primary",
+                                            "value": "6ae1401c-6682-42f2-b043-b48b950da714",
+                                            "action_id": "resolve_incident"
+                                        },
+                                        {
+                                            "url": "http://localhost:5173/incidents/6ae1401c-6682-42f2-b043-b48b950da714",
+                                            "text": {
+                                                "text": "Dashboard",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
             },
-            {
-              "text": {
-                "text": "# Postmortem: HighErrorRate on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA checkout deploy removed payment-intent state validation, causing an 8.4% 5xx rate on POST /api/checkout/pay. Vigil identified the culprit commit and posted an on-call brief within a minute of the alert; the incident was resolved by rolling back the deploy.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes). |\n| T+1m | Vigil brief posted: commit a1b2c3d4e5 flagged as likely culprit (confidence 0.86) with rollback runbook. |\n| T+resolution | Incident marked resolved after the checkout deploy was rolled back. |\n\n## Root cause\nCommit a1b2c3d4e5 refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.\n\n## Contributing factors\n- The middleware validation the refactor depended on was tracked in a separate change that had not shipped.\n- No integration test covered confirming a payment intent in a non-confirmable state.\n\n## Impact\nCheckout errored for the duration of the incident at roughly 8% of requests against a 1,200 requests/minute baseline; affected purchase attempts saw HTTP 500s.\n\n## Resolution\nRolled back the checkout deploy containing a1b2c3d4e5; error rate returned to baseline. The refactor will re-land together with the middleware validation change.\n\n## What went well\n- Culprit commit identified automatically within one minute of the alert.\n- Runbook rollback procedure was current and worked as written.\n\n## What went poorly\n- A state-validation removal shipped without its companion middleware change.\n- Test coverage did not exercise invalid intent states.\n\n## Action items\n- **P0** Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION. _(owner: @erik)_\n- **P1** Gate refactors that move validation across layers behind a feature flag. _(owner: @erik)_\n- **P2** Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection. _(owner: on-call)_",
-                "type": "mrkdwn"
-              },
-              "type": "section"
-            }
-          ]
+            "created_at": "2026-09-02 05:44:52.030439+00:00"
+        },
+        {
+            "event_type": "triage_finalized",
+            "payload": {
+                "chunks": 4,
+                "errors": {},
+                "scored": 5,
+                "culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+                "severity": "SEV1",
+                "llm_calls": 2
+            },
+            "created_at": "2026-09-02 05:44:52.032762+00:00"
+        },
+        {
+            "event_type": "resolved",
+            "payload": {
+                "source": "alertmanager"
+            },
+            "created_at": "2026-09-02 05:44:54.046713+00:00"
+        },
+        {
+            "event_type": "postmortem_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "Postmortem for incident 6ae1401c-6682-42f2-b043-b48b950da714",
+                    "blocks": [
+                        {
+                            "text": {
+                                "text": "\ud83d\udcdd Postmortem",
+                                "type": "plain_text"
+                            },
+                            "type": "header"
+                        },
+                        {
+                            "text": {
+                                "text": "# Postmortem: HighErrorRate on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA checkout deploy removed payment-intent state validation, causing an 8.4% 5xx rate on POST /api/checkout/pay. Vigil identified the culprit commit and posted an on-call brief within a minute of the alert; the incident was resolved by rolling back the deploy.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes). |\n| T+1m | Vigil brief posted: commit 71cd87314d flagged as likely culprit (confidence 0.86) with rollback runbook. |\n| T+resolution | Incident marked resolved after the checkout deploy was rolled back. |\n\n## Root cause\nCommit 71cd87314d refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.\n\n## Contributing factors\n- The middleware validation the refactor depended on was tracked in a separate change that had not shipped.\n- No integration test covered confirming a payment intent in a non-confirmable state.\n\n## Impact\nCheckout errored for the duration of the incident at roughly 8% of requests against a 1,200 requests/minute baseline; affected purchase attempts saw HTTP 500s.\n\n## Resolution\nRolled back the checkout deploy containing 71cd87314d; error rate returned to baseline. The refactor will re-land together with the middleware validation change.\n\n## What went well\n- Culprit commit identified automatically within one minute of the alert.\n- Runbook rollback procedure was current and worked as written.\n\n## What went poorly\n- A state-validation removal shipped without its companion middleware change.\n- Test coverage did not exercise invalid intent states.\n\n## Action items\n- **P0** Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION. _(owner: @erik)_\n- **P1** Gate refactors that move validation across layers behind a feature flag. _(owner: @erik)_\n- **P2** Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection. _(owner: on-call)_",
+                                "type": "mrkdwn"
+                            },
+                            "type": "section"
+                        }
+                    ]
+                }
+            },
+            "created_at": "2026-09-02 05:44:54.060903+00:00"
         }
-      },
-      "created_at": "2026-08-19 22:15:49.203018+00:00"
+    ],
+    "commit_candidates": [
+        {
+            "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+            "message": "refactor: extract payment intent handler",
+            "author": "dev-a",
+            "committed_at": "2026-09-02 05:25:03.255115+00:00",
+            "files": [
+                {
+                    "path": "services/checkout/handlers/payment.py",
+                    "additions": 120,
+                    "deletions": 80
+                }
+            ],
+            "heuristic_score": 0.7257,
+            "feature_scores": {
+                "f_msg": 0.15,
+                "f_path": 1.0,
+                "f_risk": 0.0,
+                "f_size": 0.767732,
+                "f_time": 0.946454,
+                "f_deploy": 1.0
+            },
+            "llm_rank": 1,
+            "llm_confidence": 0.86,
+            "llm_rationale": "The diff removes the IntentState.REQUIRES_CONFIRMATION validation in confirm_payment (services/checkout/handlers/payment.py, -3 lines at @@ -41), with a comment deferring validation to middleware that is not present in this deploy. Unvalidated intents reaching gateway.confirm matches the 'payment intent state invalid' 500s, and the commit shipped in the deploy 20 minutes before the alert."
+        },
+        {
+            "sha": "520191a2fa06d48da80b227c9b8767681437b698",
+            "message": "chore: update deploy manifest replica count",
+            "author": "dev-b",
+            "committed_at": "2026-09-02 05:20:51.255115+00:00",
+            "files": [
+                {
+                    "path": "deploy/checkout.yaml",
+                    "additions": 2,
+                    "deletions": 2
+                }
+            ],
+            "heuristic_score": 0.5739,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.5,
+                "f_risk": 0.3,
+                "f_size": 0.23299,
+                "f_time": 0.935476,
+                "f_deploy": 1.0
+            },
+            "llm_rank": 2,
+            "llm_confidence": 0.12,
+            "llm_rationale": "Only changes deploy/checkout.yaml replicas 3->4; a replica count increase does not produce intent-state validation errors."
+        },
+        {
+            "sha": "481c8977e69f6849db1342b01c18ea262eeadbb8",
+            "message": "feat: add gift card support to orders",
+            "author": "dev-c",
+            "committed_at": "2026-09-02 02:44:51.255115+00:00",
+            "files": [
+                {
+                    "path": "services/orders/gift.py",
+                    "additions": 200,
+                    "deletions": 0
+                }
+            ],
+            "heuristic_score": 0.0776,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.767732,
+                "f_time": 0.60651,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        },
+        {
+            "sha": "6124c0c636aaf32624421de8fc79cbf224399980",
+            "message": "docs: update API docs",
+            "author": "dev-d",
+            "committed_at": "2026-09-01 17:44:51.255115+00:00",
+            "files": [
+                {
+                    "path": "docs/api.md",
+                    "additions": 40,
+                    "deletions": 5
+                }
+            ],
+            "heuristic_score": 0.0288,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.554253,
+                "f_time": 0.135331,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        },
+        {
+            "sha": "94fc6aa6f641f6bc02dc1b87748f18a1a193f097",
+            "message": "test: increase coverage for auth login",
+            "author": "dev-e",
+            "committed_at": "2026-09-01 03:44:51.255115+00:00",
+            "files": [
+                {
+                    "path": "services/auth/tests/test_login.py",
+                    "additions": 70,
+                    "deletions": 0
+                }
+            ],
+            "heuristic_score": 0.0197,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.617086,
+                "f_time": 0.013123,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        }
+    ],
+    "postmortem": {
+        "markdown": "# Postmortem: HighErrorRate on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA checkout deploy removed payment-intent state validation, causing an 8.4% 5xx rate on POST /api/checkout/pay. Vigil identified the culprit commit and posted an on-call brief within a minute of the alert; the incident was resolved by rolling back the deploy.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes). |\n| T+1m | Vigil brief posted: commit 71cd87314d flagged as likely culprit (confidence 0.86) with rollback runbook. |\n| T+resolution | Incident marked resolved after the checkout deploy was rolled back. |\n\n## Root cause\nCommit 71cd87314d refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.\n\n## Contributing factors\n- The middleware validation the refactor depended on was tracked in a separate change that had not shipped.\n- No integration test covered confirming a payment intent in a non-confirmable state.\n\n## Impact\nCheckout errored for the duration of the incident at roughly 8% of requests against a 1,200 requests/minute baseline; affected purchase attempts saw HTTP 500s.\n\n## Resolution\nRolled back the checkout deploy containing 71cd87314d; error rate returned to baseline. The refactor will re-land together with the middleware validation change.\n\n## What went well\n- Culprit commit identified automatically within one minute of the alert.\n- Runbook rollback procedure was current and worked as written.\n\n## What went poorly\n- A state-validation removal shipped without its companion middleware change.\n- Test coverage did not exercise invalid intent states.\n\n## Action items\n- **P0** Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION. _(owner: @erik)_\n- **P1** Gate refactors that move validation across layers behind a feature flag. _(owner: @erik)_\n- **P2** Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection. _(owner: on-call)_",
+        "model_used": "gemini-3.6-flash",
+        "created_at": "2026-09-02 05:44:54.058211+00:00"
     }
-  ],
-  "commit_candidates": [
-    {
-      "sha": "a1b2c3d4e5",
-      "message": "refactor: extract payment intent handler",
-      "author": "dev-a",
-      "committed_at": "2026-08-19 21:55:59.113966+00:00",
-      "files": [
-        {
-          "path": "services/checkout/handlers/payment.py",
-          "additions": 120,
-          "deletions": 80
-        }
-      ],
-      "heuristic_score": 0.7257,
-      "feature_scores": {
-        "f_msg": 0.15,
-        "f_path": 1.0,
-        "f_risk": 0.0,
-        "f_size": 0.767732,
-        "f_time": 0.946485,
-        "f_deploy": 1.0
-      },
-      "llm_rank": 1,
-      "llm_confidence": 0.86,
-      "llm_rationale": "The diff removes the IntentState.REQUIRES_CONFIRMATION validation in confirm_payment (services/checkout/handlers/payment.py, -3 lines at @@ -41), with a comment deferring validation to middleware that is not present in this deploy. Unvalidated intents reaching gateway.confirm matches the 'payment intent state invalid' 500s, and the commit shipped in the deploy 20 minutes before the alert."
-    },
-    {
-      "sha": "f0e1d2c3b4",
-      "message": "chore: update deploy manifest replica count",
-      "author": "dev-b",
-      "committed_at": "2026-08-19 21:51:47.113966+00:00",
-      "files": [
-        {
-          "path": "deploy/checkout.yaml",
-          "additions": 2,
-          "deletions": 2
-        }
-      ],
-      "heuristic_score": 0.574,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.5,
-        "f_risk": 0.3,
-        "f_size": 0.23299,
-        "f_time": 0.935507,
-        "f_deploy": 1.0
-      },
-      "llm_rank": 2,
-      "llm_confidence": 0.12,
-      "llm_rationale": "Only changes deploy/checkout.yaml replicas 3->4; a replica count increase does not produce intent-state validation errors."
-    },
-    {
-      "sha": "1111aaaa22",
-      "message": "feat: add gift card support to orders",
-      "author": "dev-c",
-      "committed_at": "2026-08-19 19:15:47.113966+00:00",
-      "files": [
-        {
-          "path": "services/orders/gift.py",
-          "additions": 200,
-          "deletions": 0
-        }
-      ],
-      "heuristic_score": 0.0776,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.767732,
-        "f_time": 0.606531,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    },
-    {
-      "sha": "2222bbbb33",
-      "message": "docs: update API docs",
-      "author": "dev-d",
-      "committed_at": "2026-08-19 10:15:47.113966+00:00",
-      "files": [
-        {
-          "path": "docs/api.md",
-          "additions": 40,
-          "deletions": 5
-        }
-      ],
-      "heuristic_score": 0.0288,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.554253,
-        "f_time": 0.135335,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    },
-    {
-      "sha": "3333cccc44",
-      "message": "test: increase coverage for auth login",
-      "author": "dev-e",
-      "committed_at": "2026-08-18 20:15:47.113966+00:00",
-      "files": [
-        {
-          "path": "services/auth/tests/test_login.py",
-          "additions": 70,
-          "deletions": 0
-        }
-      ],
-      "heuristic_score": 0.0197,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.617086,
-        "f_time": 0.013124,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    }
-  ],
-  "postmortem": {
-    "markdown": "# Postmortem: HighErrorRate on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA checkout deploy removed payment-intent state validation, causing an 8.4% 5xx rate on POST /api/checkout/pay. Vigil identified the culprit commit and posted an on-call brief within a minute of the alert; the incident was resolved by rolling back the deploy.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes). |\n| T+1m | Vigil brief posted: commit a1b2c3d4e5 flagged as likely culprit (confidence 0.86) with rollback runbook. |\n| T+resolution | Incident marked resolved after the checkout deploy was rolled back. |\n\n## Root cause\nCommit a1b2c3d4e5 refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.\n\n## Contributing factors\n- The middleware validation the refactor depended on was tracked in a separate change that had not shipped.\n- No integration test covered confirming a payment intent in a non-confirmable state.\n\n## Impact\nCheckout errored for the duration of the incident at roughly 8% of requests against a 1,200 requests/minute baseline; affected purchase attempts saw HTTP 500s.\n\n## Resolution\nRolled back the checkout deploy containing a1b2c3d4e5; error rate returned to baseline. The refactor will re-land together with the middleware validation change.\n\n## What went well\n- Culprit commit identified automatically within one minute of the alert.\n- Runbook rollback procedure was current and worked as written.\n\n## What went poorly\n- A state-validation removal shipped without its companion middleware change.\n- Test coverage did not exercise invalid intent states.\n\n## Action items\n- **P0** Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION. _(owner: @erik)_\n- **P1** Gate refactors that move validation across layers behind a feature flag. _(owner: @erik)_\n- **P2** Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection. _(owner: on-call)_",
-    "model_used": "gemini-3.6-flash",
-    "created_at": "2026-08-19 22:15:49.198273+00:00"
-  }
 }

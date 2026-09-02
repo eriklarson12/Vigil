@@ -1,6 +1,6 @@
 {
   "impact_narrative": "Orders p95 latency has doubled to 900ms, degrading roughly 450 order requests per minute.",
-  "cause_summary": "The httpx 0.27->0.28 bump (commit e5f6a7b8c9) deployed 35 minutes before the regression; connection pool reuse behavior changed in the new httpcore, slowing orders->inventory calls.",
+  "cause_summary": "The httpx 0.27->0.28 bump (commit abc1a46fb0) deployed 35 minutes before the regression; connection pool reuse behavior changed in the new httpcore, slowing orders->inventory calls.",
   "runbook_citation": {
     "slug": "dependency-upgrades",
     "heading_path": "Dependency Upgrade Runbook > Latency regression after a dependency bump",

@@ -1,9 +1,18 @@
 {
   "summary": "A production alert was triaged automatically by Vigil, briefed to on-call, and resolved. Details are captured in the timeline and analysis below.",
   "timeline": [
-    {"time": "T+0m", "event": "Alert fired and was ingested by Vigil."},
-    {"time": "T+1m", "event": "Triage brief posted to the on-call channel."},
-    {"time": "T+resolution", "event": "Incident marked resolved."}
+    {
+      "time": "T+0m",
+      "event": "Alert fired and was ingested by Vigil."
+    },
+    {
+      "time": "T+1m",
+      "event": "Triage brief posted to the on-call channel."
+    },
+    {
+      "time": "T+resolution",
+      "event": "Incident marked resolved."
+    }
   ],
   "root_cause": "Root cause undetermined from the automated analysis; the leading hypotheses from the retrieved evidence are recorded in the incident's commit-candidate rationales and runbook citation.",
   "contributing_factors": [
@@ -18,7 +27,15 @@
     "Automated analysis could not pinpoint a root cause with high confidence."
   ],
   "action_items": [
-    {"description": "Review the incident record and confirm or correct the root-cause hypothesis.", "owner": "on-call", "priority": "P1"},
-    {"description": "Update the relevant runbook with what actually fixed the issue.", "owner": "on-call", "priority": "P2"}
+    {
+      "description": "Review the incident record and confirm or correct the root-cause hypothesis.",
+      "owner": "on-call",
+      "priority": "P1"
+    },
+    {
+      "description": "Update the relevant runbook with what actually fixed the issue.",
+      "owner": "on-call",
+      "priority": "P2"
+    }
   ]
 }

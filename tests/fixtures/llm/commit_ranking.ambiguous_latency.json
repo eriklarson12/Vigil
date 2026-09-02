@@ -1,21 +1,21 @@
 {
   "verdicts": [
     {
-      "sha": "aa11bb22cc",
+      "sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
       "rank": 1,
       "confidence": 0.35,
       "rationale": "authorize_all in libs/payments/batch.py moves from asyncio.gather to a Batcher whose window comes from settings.payments_batch (@@ -12,10 +12,40), so its cost is not visible in the diff. It also shipped 40 minutes after the p99 drift began, and the replay against the previous build reproduces the same latency. Plausible mechanism, contradicted by the timeline.",
       "suggested_action": "investigate"
     },
     {
-      "sha": "dd33ee44ff",
+      "sha": "0a2edd823315a992bf9de0f4f2c9789f00bee5af",
       "rank": 2,
       "confidence": 0.3,
       "rationale": "services/checkout/http.py swaps a per-request httpx client for a cached shared one configured from settings.http_client. A shared client can queue behind its connection limits, but the limits are not in the diff and this landed after the drift started.",
       "suggested_action": "investigate"
     },
     {
-      "sha": "5566778899",
+      "sha": "ee1837c66ec26d15297a0bd52fc9320d34f52dd5",
       "rank": 3,
       "confidence": 0.22,
       "rationale": "Doubling workers 8 to 16 in deploy/checkout.yaml raises concurrency against the same downstream pools, but the manifest change was not part of a deploy in the window and postdates the drift.",

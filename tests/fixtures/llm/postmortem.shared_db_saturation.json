@@ -1,18 +1,30 @@
 {
   "summary": "Raising the payments-db statement timeout from 5s to 60s let a new reporting query hold connections until the pool was exhausted, taking checkout and orders down with it. Vigil classified it SEV1 on the shared-dependency rule and named the culprit commit within a minute.",
   "timeline": [
-    {"time": "T-25m", "event": "Commit b7c8d9e0f1 deployed: max_connections 40 to 180, statement_timeout 5s to 60s, plus an on-demand revenue rollup query."},
-    {"time": "T+0m", "event": "ConnectionPoolExhausted alert fired for payments-db (0 idle connections for 4 minutes)."},
-    {"time": "T+1m", "event": "Vigil brief posted: SEV1 with blast radius checkout and orders, culprit b7c8d9e0f1 at 0.84 confidence."},
-    {"time": "T+resolution", "event": "Incident marked resolved after the timeout change was rolled back and the running rollups were terminated."}
+    {
+      "time": "T-25m",
+      "event": "Commit 40b61e74bd deployed: max_connections 40 to 180, statement_timeout 5s to 60s, plus an on-demand revenue rollup query."
+    },
+    {
+      "time": "T+0m",
+      "event": "ConnectionPoolExhausted alert fired for payments-db (0 idle connections for 4 minutes)."
+    },
+    {
+      "time": "T+1m",
+      "event": "Vigil brief posted: SEV1 with blast radius checkout and orders, culprit 40b61e74bd at 0.84 confidence."
+    },
+    {
+      "time": "T+resolution",
+      "event": "Incident marked resolved after the timeout change was rolled back and the running rollups were terminated."
+    }
   ],
-  "root_cause": "Commit b7c8d9e0f1 disabled the effective ceiling on query duration by moving statement_timeout to 60s while adding a heavy orders-to-payments rollup that admins could trigger on demand. Concurrent rollups held connections for up to a minute each and starved every other client of the pool.",
+  "root_cause": "Commit 40b61e74bd disabled the effective ceiling on query duration by moving statement_timeout to 60s while adding a heavy orders-to-payments rollup that admins could trigger on demand. Concurrent rollups held connections for up to a minute each and starved every other client of the pool.",
   "contributing_factors": [
     "max_connections was raised in the same change, masking the saturation until it was total.",
     "The reporting query ran against the primary rather than a read replica."
   ],
   "impact": "payments-db serves checkout, orders, and inventory; two user-facing services returned 5xx for the duration, against a 2,000 requests/minute database baseline.",
-  "resolution": "Rolled back b7c8d9e0f1 to restore the 5s statement timeout and terminated the in-flight rollup queries with pg_terminate_backend.",
+  "resolution": "Rolled back 40b61e74bd to restore the 5s statement timeout and terminated the in-flight rollup queries with pg_terminate_backend.",
   "went_well": [
     "Severity came from the service catalog, so a non-user-facing database still paged as SEV1 with its two user-facing dependents named.",
     "The connection-pool runbook section matched the failure exactly."
@@ -22,8 +34,20 @@
     "Pool saturation had no warning-level alert before total exhaustion."
   ],
   "action_items": [
-    {"description": "Move the revenue rollup to a read replica with a dedicated connection budget.", "owner": "@erik", "priority": "P0"},
-    {"description": "Add a warning alert at 80% payments-db pool utilisation.", "owner": "@erik", "priority": "P1"},
-    {"description": "Require timeout and pool-sizing changes to ship separately from query changes.", "owner": "on-call", "priority": "P2"}
+    {
+      "description": "Move the revenue rollup to a read replica with a dedicated connection budget.",
+      "owner": "@erik",
+      "priority": "P0"
+    },
+    {
+      "description": "Add a warning alert at 80% payments-db pool utilisation.",
+      "owner": "@erik",
+      "priority": "P1"
+    },
+    {
+      "description": "Require timeout and pool-sizing changes to ship separately from query changes.",
+      "owner": "on-call",
+      "priority": "P2"
+    }
   ]
 }

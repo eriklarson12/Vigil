@@ -1,11 +1,11 @@
 {
-  "culprit": "b2c3d4e5f6",
+  "culprit": "d770357e9b476f15666924e3b15a34ad417c9cd7",
   "commits": [
     {
-      "sha": "b2c3d4e5f6",
+      "sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
       "message": "add index on orders.customer_id",
       "author": "dev-a",
-      "hours_before_alert": 0.67,
+      "hours_before_alert": 0.6702,
       "files": [
         {
           "path": "services/orders/migrations/0042_add_customer_index.sql",
@@ -13,13 +13,13 @@
           "deletions": 0
         }
       ],
-      "patch": "--- services/orders/migrations/0042_add_customer_index.sql\n@@ +1,18 @@\n+-- speed up customer order history\n+CREATE INDEX orders_customer_id_idx ON orders (customer_id);\n+-- (note: not CONCURRENTLY)"
+      "patch": "--- services/orders/migrations/0042_add_customer_index.sql\n@@ -0,0 +1,18 @@\n+-- speed up customer order history\n+CREATE INDEX orders_customer_id_idx ON orders (customer_id);\n+-- (note: not CONCURRENTLY)\n+-- 0042_add_customer_index statement 2367\n+-- 0042_add_customer_index statement 2368\n+-- 0042_add_customer_index statement 2369\n+-- 0042_add_customer_index statement 2370\n+-- 0042_add_customer_index statement 2371\n+-- 0042_add_customer_index statement 2372\n+-- 0042_add_customer_index statement 2373\n+-- 0042_add_customer_index statement 2374\n+-- 0042_add_customer_index statement 2375\n+-- 0042_add_customer_index statement 2376\n+-- 0042_add_customer_index statement 2377\n+-- 0042_add_customer_index statement 2378\n+-- 0042_add_customer_index statement 2379\n+-- 0042_add_customer_index statement 2380\n+-- 0042_add_customer_index statement 2381"
     },
     {
-      "sha": "4444dddd55",
+      "sha": "ebabc59ebe5fd0eb13b93509652069d32c66c542",
       "message": "fix: correct rounding in order totals",
       "author": "dev-b",
-      "hours_before_alert": 2,
+      "hours_before_alert": 2.0002,
       "files": [
         {
           "path": "services/orders/money.py",
@@ -27,13 +27,13 @@
           "deletions": 6
         }
       ],
-      "patch": "--- services/orders/money.py\n@@ -18,6 +18,12 @@\n-    return round(total, 2)\n+    return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)"
+      "patch": "--- services/orders/money.py\n@@ -1,9 +1,15 @@\n-    return round(total, 2)\n-    log.debug('money.step', step=394, elapsed=timer.elapsed_ms())\n-    money_span = tracer.start_span('money.step_395')\n-    result_396 = await backend.fetch(key=f'money:396')\n-    if result_397 is None:  # cache miss on the money path\n-        metrics.increment('money.miss', tags={'shard': 398})\n+    return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)\n+    result_2356 = await backend.fetch(key=f'money:2356')\n+    if result_2357 is None:  # cache miss on the money path\n+        metrics.increment('money.miss', tags={'shard': 2358})\n+    log.debug('money.step', step=2359, elapsed=timer.elapsed_ms())\n+    money_span = tracer.start_span('money.step_2360')\n+    result_2361 = await backend.fetch(key=f'money:2361')\n+    if result_2362 is None:  # cache miss on the money path\n+        metrics.increment('money.miss', tags={'shard': 2363})\n+    log.debug('money.step', step=2364, elapsed=timer.elapsed_ms())\n+    money_span = tracer.start_span('money.step_2365')\n+    result_2366 = await backend.fetch(key=f'money:2366')\n     log.debug('money.step', step=399, elapsed=timer.elapsed_ms())\n     money_span = tracer.start_span('money.step_400')\n     result_401 = await backend.fetch(key=f'money:401')"
     },
     {
-      "sha": "5555eeee66",
+      "sha": "9a563f83a5c9c77ccd6dd00d80b857b6cc0e63d2",
       "message": "chore: tidy frontend styles",
       "author": "dev-c",
-      "hours_before_alert": 9,
+      "hours_before_alert": 9.0002,
       "files": [
         {
           "path": "frontend/styles.css",
@@ -41,13 +41,13 @@
           "deletions": 22
         }
       ],
-      "patch": "--- frontend/styles.css\n@@ css only @@"
+      "patch": "--- frontend/styles.css\n@@ -1,24 +1,32 @@\n-.styles-row-370 { padding: 2px; }\n-.styles-row-371 { padding: 3px; }\n-.styles-row-372 { padding: 4px; }\n-.styles-row-373 { padding: 5px; }\n-.styles-row-374 { padding: 6px; }\n-.styles-row-375 { padding: 7px; }\n-.styles-row-376 { padding: 0px; }\n-.styles-row-377 { padding: 1px; }\n-.styles-row-378 { padding: 2px; }\n-.styles-row-379 { padding: 3px; }\n-.styles-row-380 { padding: 4px; }\n-.styles-row-381 { padding: 5px; }\n-.styles-row-382 { padding: 6px; }\n-.styles-row-383 { padding: 7px; }\n-.styles-row-384 { padding: 0px; }\n-.styles-row-385 { padding: 1px; }\n-.styles-row-386 { padding: 2px; }\n-.styles-row-387 { padding: 3px; }\n-.styles-row-388 { padding: 4px; }\n-.styles-row-389 { padding: 5px; }\n-.styles-row-390 { padding: 6px; }\n-.styles-row-391 { padding: 7px; }\n+.styles-row-2326 { padding: 6px; }\n+.styles-row-2327 { padding: 7px; }\n+.styles-row-2328 { padding: 0px; }\n+.styles-row-2329 { padding: 1px; }\n+.styles-row-2330 { padding: 2px; }\n+.styles-row-2331 { padding: 3px; }\n+.styles-row-2332 { padding: 4px; }\n+.styles-row-2333 { padding: 5px; }\n+.styles-row-2334 { padding: 6px; }\n+.styles-row-2335 { padding: 7px; }\n+.styles-row-2336 { padding: 0px; }\n+.styles-row-2337 { padding: 1px; }\n+.styles-row-2338 { padding: 2px; }\n+.styles-row-2339 { padding: 3px; }\n+.styles-row-2340 { padding: 4px; }\n+.styles-row-2341 { padding: 5px; }\n+.styles-row-2342 { padding: 6px; }\n+.styles-row-2343 { padding: 7px; }\n+.styles-row-2344 { padding: 0px; }\n+.styles-row-2345 { padding: 1px; }\n+.styles-row-2346 { padding: 2px; }\n+.styles-row-2347 { padding: 3px; }\n+.styles-row-2348 { padding: 4px; }\n+.styles-row-2349 { padding: 5px; }\n+.styles-row-2350 { padding: 6px; }\n+.styles-row-2351 { padding: 7px; }\n+.styles-row-2352 { padding: 0px; }\n+.styles-row-2353 { padding: 1px; }\n+.styles-row-2354 { padding: 2px; }\n+.styles-row-2355 { padding: 3px; }\n .styles-row-392 { padding: 0px; }\n .styles-row-393 { padding: 1px; }"
     },
     {
-      "sha": "6666ffff77",
+      "sha": "d03fc36ed60f7b29bab7e03075bb3d2089e39c9b",
       "message": "docs: refresh on-call runbook links",
       "author": "dev-d",
-      "hours_before_alert": 20,
+      "hours_before_alert": 20.0002,
       "files": [
         {
           "path": "docs/oncall.md",
@@ -55,7 +55,7 @@
           "deletions": 3
         }
       ],
-      "patch": "--- docs/oncall.md\n@@ documentation only @@"
+      "patch": "--- docs/oncall.md\n@@ -1,6 +1,11 @@\n-- Oncall note 346: see the runbook for details.\n-- Oncall note 347: see the runbook for details.\n-- Oncall note 348: see the runbook for details.\n+- Oncall note 2318: see the runbook for details.\n+- Oncall note 2319: see the runbook for details.\n+- Oncall note 2320: see the runbook for details.\n+- Oncall note 2321: see the runbook for details.\n+- Oncall note 2322: see the runbook for details.\n+- Oncall note 2323: see the runbook for details.\n+- Oncall note 2324: see the runbook for details.\n+- Oncall note 2325: see the runbook for details.\n - Oncall note 349: see the runbook for details.\n - Oncall note 350: see the runbook for details.\n - Oncall note 351: see the runbook for details."
     }
   ]
 }
