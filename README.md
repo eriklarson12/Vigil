@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-191%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-214%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -212,7 +212,7 @@ Try `--scenario cert_expiry` to see the state where nothing scores above the flo
 ## Development & Testing
 
 ```bash
-# Backend: 100 unit tests, plus suites that need the database container
+# Backend: 123 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
 uv run pytest -m integration      # 25 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
@@ -228,7 +228,7 @@ npm run build
 
 GitHub Actions runs all of it on every push and pull request, with no API key and no live model calls anywhere.
 
-The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first, while `cert_expiry` must rank nothing above the score floor and `ambiguous_latency` must leave three candidates the scorer cannot separate. A test asserts that every commit fixture is covered by that culprit map, so a new fixture cannot quietly escape the assertion. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly. A chaos test kills the triage graph mid-flight, while it is parked inside the commit ranking call, then resumes it through the same stale-claim reclaim a restarted container uses, and asserts the incident posts exactly one brief, is charged for exactly two model calls, and ends in the same state as a run that was never killed. A redaction processor sits at the head of the structlog chain, and its tests assert on the real leak it closes: an `httpx.HTTPStatusError` from a failed Slack post carries the webhook URL, which is itself the credential, into the degradation log line.
+The commit scorer has golden tests with hand-computed expected values, and each scenario's planted culprit must rank first, while `cert_expiry` must rank nothing above the score floor and `ambiguous_latency` must leave three candidates the scorer cannot separate. Each fixture declares its own planted culprit, and a test asserts every fixture either declares one or is listed as deliberately having none, so a new fixture cannot quietly escape the assertion. A further test cross-checks the recorded LLM responses against the commit fixtures: the ranking node drops verdicts naming an unknown sha, so fixtures that drift apart would report no culprit found rather than failing, which is the one way this system can lie quietly. LLM fixtures are parsed through the real Pydantic schemas, so prompt or schema drift fails CI loudly. A chaos test kills the triage graph mid-flight, while it is parked inside the commit ranking call, then resumes it through the same stale-claim reclaim a restarted container uses, and asserts the incident posts exactly one brief, is charged for exactly two model calls, and ends in the same state as a run that was never killed. A redaction processor sits at the head of the structlog chain, and its tests assert on the real leak it closes: an `httpx.HTTPStatusError` from a failed Slack post carries the webhook URL, which is itself the credential, into the degradation log line.
 
 ## API Reference
 
@@ -278,7 +278,7 @@ Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0df
 
 ## Limitations
 
-- **The demo data is synthetic.** Alerts come from `vigil-sim` and commit history is replayed from fixtures, so the deployed incidents are reproducible rather than real. Live GitHub mode needs a public repo with matching planted commits.
+- **The demo data is synthetic.** Alerts come from `vigil-sim` and commit history is replayed from fixtures, so the deployed incidents are reproducible rather than real. The commits themselves are real: `scripts/build_demo_repo.py` replays the fixtures into a public repo with matching paths, messages, and diff sizes, and `scripts/record_fixtures.py` reads the pushed repo back through the live GitHub client so every culprit link in a brief opens the actual planted diff. Production still replays fixtures, because a live fetch only looks back 48 hours and a fixture encodes commit ages relative to the alert instead.
 - **The dashboard is read-only and unauthenticated.** That is deliberate for synthetic data. Add authentication before pointing it at anything real; the state-changing endpoints already require a bearer token.
 - **Free-tier quotas are a hard ceiling.** A Postgres-backed daily budget stops generation calls at `LLM_DAILY_BUDGET`, and Vigil falls back to the lighter model and then to the deterministic brief rather than queueing spend.
 - **The first request after idle is slow.** Scale-to-zero plus a Neon cold start means a few seconds on the first hit, which is the cost of the $0 budget.

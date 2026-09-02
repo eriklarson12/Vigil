@@ -1,20 +1,20 @@
 {
   "verdicts": [
     {
-      "sha": "c3d4e5f6a7",
+      "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
       "rank": 1,
       "confidence": 0.72,
-      "rationale": "cache.py replaces LRUCache(maxsize=10_000) with a plain dict that is only ever written to (get_sku inserts on miss, nothing evicts) — an unbounded cache matching the heap profile 'dominated by SKU lookup cache entries' and the linear RSS growth since the commit landed ~30h ago.",
+      "rationale": "cache.py replaces LRUCache(maxsize=10_000) with a plain dict that is only ever written to (get_sku inserts on miss, nothing evicts) \u2014 an unbounded cache matching the heap profile 'dominated by SKU lookup cache entries' and the linear RSS growth since the commit landed ~30h ago.",
       "suggested_action": "revert"
     },
     {
-      "sha": "8888bbbb99",
+      "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
       "rank": 2,
       "confidence": 0.05,
       "rationale": "CI workflow caching cannot affect runtime pod memory.",
       "suggested_action": "investigate"
     }
   ],
-  "likely_culprit_sha": "c3d4e5f6a7",
+  "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
   "no_culprit_reason": null
 }

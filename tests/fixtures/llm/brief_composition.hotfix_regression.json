@@ -1,13 +1,13 @@
 {
   "impact_narrative": "11% of order reads are timing out at 30s, affecting roughly 450 requests per minute and blocking order history for customers.",
-  "cause_summary": "Hotfix f6a7b8c9d0 set statement_timeout to '0' on the orders read session instead of raising the cap, so slow SELECTs run until the gateway gives up while holding their connections. It shipped 30 minutes before the alert.",
+  "cause_summary": "Hotfix edef73cc43 set statement_timeout to '0' on the orders read session instead of raising the cap, so slow SELECTs run until the gateway gives up while holding their connections. It shipped 30 minutes before the alert.",
   "runbook_citation": {
     "slug": "orders-database",
     "heading_path": "Orders Database Runbook > Slow queries",
     "why": "Gives the pg_stat_activity triage for separating load from locking on long-running orders reads."
   },
   "next_steps": [
-    "Revert f6a7b8c9d0 to restore statement_timeout to 5s on orders reads.",
+    "Revert edef73cc43 to restore statement_timeout to 5s on orders reads.",
     "List running queries with pg_stat_activity and cancel the ones older than 30s.",
     "Fix the retry path that was tripping the 5s cap, rather than disabling the timeout."
   ]

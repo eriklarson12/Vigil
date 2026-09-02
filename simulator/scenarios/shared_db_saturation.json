@@ -16,7 +16,9 @@
   "deploys": [
     {
       "service": "payments-db",
-      "commit_shas": ["b7c8d9e0f1"],
+      "commit_shas": [
+        "40b61e74bd9509074be0bba465fe39b722fabe23"
+      ],
       "minutes_before_alert": 25
     }
   ]

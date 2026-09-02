@@ -1,10 +1,22 @@
 {
   "summary": "A six-line hotfix disabled the statement timeout on orders reads instead of raising it, so slow queries ran until the 30s gateway timeout and 11% of order reads returned 504. Vigil ranked the hotfix above an 800-line refactor that landed in the same window.",
   "timeline": [
-    {"time": "T-30m", "event": "Hotfix f6a7b8c9d0 deployed: statement_timeout set to '0' on the orders read session."},
-    {"time": "T+0m", "event": "OrderQueryTimeouts alert fired for orders (11% of reads timing out at 30s)."},
-    {"time": "T+1m", "event": "Vigil brief posted: culprit f6a7b8c9d0 at 0.87 confidence; the 800-line repository refactor ranked second at 0.09."},
-    {"time": "T+resolution", "event": "Incident marked resolved after the hotfix was reverted and long-running queries were cancelled."}
+    {
+      "time": "T-30m",
+      "event": "Hotfix edef73cc43 deployed: statement_timeout set to '0' on the orders read session."
+    },
+    {
+      "time": "T+0m",
+      "event": "OrderQueryTimeouts alert fired for orders (11% of reads timing out at 30s)."
+    },
+    {
+      "time": "T+1m",
+      "event": "Vigil brief posted: culprit edef73cc43 at 0.87 confidence; the 800-line repository refactor ranked second at 0.09."
+    },
+    {
+      "time": "T+resolution",
+      "event": "Incident marked resolved after the hotfix was reverted and long-running queries were cancelled."
+    }
   ],
   "root_cause": "Retries during a backlog drain were tripping the 5s statement timeout. The hotfix removed the cancellation entirely with SET statement_timeout = '0' rather than raising it, so slow reads held their connections until the gateway timed out at 30s.",
   "contributing_factors": [
@@ -12,7 +24,7 @@
     "The underlying retry storm was never addressed, only its symptom."
   ],
   "impact": "11% of order reads returned 504 for the duration, against a 450 requests/minute orders baseline; customers could not load order history.",
-  "resolution": "Reverted f6a7b8c9d0 to restore the 5s timeout and cancelled the queries still running past 30s.",
+  "resolution": "Reverted edef73cc43 to restore the 5s timeout and cancelled the queries still running past 30s.",
   "went_well": [
     "Message signals and diff size worked as intended: a six-line hotfix outranked an 800-line refactor that shipped in the same window.",
     "The revert was clean because the hotfix touched one file."
@@ -22,8 +34,20 @@
     "Disabling a timeout was available as a one-line change with no guardrail."
   ],
   "action_items": [
-    {"description": "Fix the retry path that was tripping the 5s timeout during backlog drains.", "owner": "@erik", "priority": "P0"},
-    {"description": "Reject statement_timeout values of 0 in code review with a lint rule.", "owner": "@erik", "priority": "P1"},
-    {"description": "Require a second reviewer for hotfixes that touch database session setup.", "owner": "on-call", "priority": "P2"}
+    {
+      "description": "Fix the retry path that was tripping the 5s timeout during backlog drains.",
+      "owner": "@erik",
+      "priority": "P0"
+    },
+    {
+      "description": "Reject statement_timeout values of 0 in code review with a lint rule.",
+      "owner": "@erik",
+      "priority": "P1"
+    },
+    {
+      "description": "Require a second reviewer for hotfixes that touch database session setup.",
+      "owner": "on-call",
+      "priority": "P2"
+    }
   ]
 }

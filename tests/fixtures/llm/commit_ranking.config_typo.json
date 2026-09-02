@@ -1,20 +1,20 @@
 {
   "verdicts": [
     {
-      "sha": "d4e5f6a7b8",
+      "sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
       "rank": 1,
       "confidence": 0.93,
-      "rationale": "config/checkout.yaml line 22 changes db_pool_timeout from 30 to '30s' — the crash log reads \"invalid literal for int(): 30s\" while parsing db_pool_timeout, a one-to-one match. The config rolled out 25 minutes before the CrashLoopBackOff began.",
+      "rationale": "config/checkout.yaml line 22 changes db_pool_timeout from 30 to '30s' \u2014 the crash log reads \"invalid literal for int(): 30s\" while parsing db_pool_timeout, a one-to-one match. The config rolled out 25 minutes before the CrashLoopBackOff began.",
       "suggested_action": "config_fix"
     },
     {
-      "sha": "bbbb222233",
+      "sha": "e325b7b53e50a6cd9242c6eea78376417f83a81d",
       "rank": 2,
       "confidence": 0.1,
       "rationale": "libs/logging.py refactor is shared code, but the crash is a config parse error, not a logging failure.",
       "suggested_action": "investigate"
     }
   ],
-  "likely_culprit_sha": "d4e5f6a7b8",
+  "likely_culprit_sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
   "no_culprit_reason": null
 }

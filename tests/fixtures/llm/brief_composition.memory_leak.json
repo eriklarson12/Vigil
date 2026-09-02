@@ -1,13 +1,13 @@
 {
   "impact_narrative": "Inventory pods are OOM-restarting every ~6 hours; downstream checkout and orders see brief error bursts on each restart.",
-  "cause_summary": "Commit c3d4e5f6a7 replaced the bounded LRU SKU cache with a plain dict that never evicts, so memory grows linearly with unique SKU lookups.",
+  "cause_summary": "Commit 2ea16a2e6e replaced the bounded LRU SKU cache with a plain dict that never evicts, so memory grows linearly with unique SKU lookups.",
   "runbook_citation": {
     "slug": "inventory-service",
     "heading_path": "Inventory Service Runbook > Memory growth and OOM restarts",
     "why": "Covers heap-dump triage and the cache-related mitigation for inventory."
   },
   "next_steps": [
-    "Revert c3d4e5f6a7 or hotfix the cache back to a bounded LRU.",
+    "Revert 2ea16a2e6e or hotfix the cache back to a bounded LRU.",
     "Restart inventory pods off-peak to reset RSS.",
     "Add a memory-growth alert at 70% to catch leaks before OOM."
   ]

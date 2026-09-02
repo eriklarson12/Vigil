@@ -1,17 +1,26 @@
 {
   "summary": "A checkout deploy removed payment-intent state validation, causing an 8.4% 5xx rate on POST /api/checkout/pay. Vigil identified the culprit commit and posted an on-call brief within a minute of the alert; the incident was resolved by rolling back the deploy.",
   "timeline": [
-    {"time": "T+0m", "event": "HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes)."},
-    {"time": "T+1m", "event": "Vigil brief posted: commit a1b2c3d4e5 flagged as likely culprit (confidence 0.86) with rollback runbook."},
-    {"time": "T+resolution", "event": "Incident marked resolved after the checkout deploy was rolled back."}
+    {
+      "time": "T+0m",
+      "event": "HighErrorRate alert fired for checkout (5xx above 8% for 5 minutes)."
+    },
+    {
+      "time": "T+1m",
+      "event": "Vigil brief posted: commit 71cd87314d flagged as likely culprit (confidence 0.86) with rollback runbook."
+    },
+    {
+      "time": "T+resolution",
+      "event": "Incident marked resolved after the checkout deploy was rolled back."
+    }
   ],
-  "root_cause": "Commit a1b2c3d4e5 refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.",
+  "root_cause": "Commit 71cd87314d refactored confirm_payment and removed the IntentState.REQUIRES_CONFIRMATION check, relying on middleware validation that was not enabled in this deploy. Unvalidated intents reached the payment gateway and failed with 'payment intent state invalid'.",
   "contributing_factors": [
     "The middleware validation the refactor depended on was tracked in a separate change that had not shipped.",
     "No integration test covered confirming a payment intent in a non-confirmable state."
   ],
   "impact": "Checkout errored for the duration of the incident at roughly 8% of requests against a 1,200 requests/minute baseline; affected purchase attempts saw HTTP 500s.",
-  "resolution": "Rolled back the checkout deploy containing a1b2c3d4e5; error rate returned to baseline. The refactor will re-land together with the middleware validation change.",
+  "resolution": "Rolled back the checkout deploy containing 71cd87314d; error rate returned to baseline. The refactor will re-land together with the middleware validation change.",
   "went_well": [
     "Culprit commit identified automatically within one minute of the alert.",
     "Runbook rollback procedure was current and worked as written."
@@ -21,8 +30,20 @@
     "Test coverage did not exercise invalid intent states."
   ],
   "action_items": [
-    {"description": "Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION.", "owner": "@erik", "priority": "P0"},
-    {"description": "Gate refactors that move validation across layers behind a feature flag.", "owner": "@erik", "priority": "P1"},
-    {"description": "Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection.", "owner": "on-call", "priority": "P2"}
+    {
+      "description": "Add integration test: confirm_payment rejects intents not in REQUIRES_CONFIRMATION.",
+      "owner": "@erik",
+      "priority": "P0"
+    },
+    {
+      "description": "Gate refactors that move validation across layers behind a feature flag.",
+      "owner": "@erik",
+      "priority": "P1"
+    },
+    {
+      "description": "Alert on checkout 5xx at 2% (earlier than the 8% page) for faster detection.",
+      "owner": "on-call",
+      "priority": "P2"
+    }
   ]
 }

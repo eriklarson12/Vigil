@@ -1,13 +1,13 @@
 {
   "impact_narrative": "Roughly 6% of purchase attempts are being rejected for a price mismatch, against a baseline of about 1,200 checkout requests per minute.",
-  "cause_summary": "Commit 9a8b7c6d5e enabled the dynamic pricing engine and recomputes the price at charge time, so quotes and charges disagree. A revert (4f3e2d1c0b) is merged on main but has not been deployed, so production is still running the bad code.",
+  "cause_summary": "Commit 02c238690b enabled the dynamic pricing engine and recomputes the price at charge time, so quotes and charges disagree. A revert (8957606ede) is merged on main but has not been deployed, so production is still running the bad code.",
   "runbook_citation": {
     "slug": "checkout-service",
     "heading_path": "Checkout Service Runbook > High error rate after a deploy",
     "why": "The fix is a deploy rollback of the checkout release containing the pricing change."
   },
   "next_steps": [
-    "Deploy the existing revert 4f3e2d1c0b, or roll back the checkout deploy containing 9a8b7c6d5e.",
+    "Deploy the existing revert 8957606ede, or roll back the checkout deploy containing 02c238690b.",
     "Confirm the payment failure rate returns below 0.5% on the Checkout Overview dashboard.",
     "Re-land dynamic pricing with the quote price carried through to the charge."
   ]

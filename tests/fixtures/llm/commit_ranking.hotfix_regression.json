@@ -1,20 +1,20 @@
 {
   "verdicts": [
     {
-      "sha": "f6a7b8c9d0",
+      "sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
       "rank": 1,
       "confidence": 0.87,
       "rationale": "services/orders/db.py sets statement_timeout to '0' on the read session (@@ -14,2 +14,4), disabling cancellation entirely rather than raising the cap. Slow SELECTs now run until the 30s gateway timeout while holding their connections, which is precisely the 504s and long-running queries in the alert. Six changed lines, shipped in the deploy 30 minutes before the alert.",
       "suggested_action": "revert"
     },
     {
-      "sha": "1a2b3c4d5e",
+      "sha": "433979218754288db33c622ef0140e54a28f8621",
       "rank": 2,
       "confidence": 0.09,
       "rationale": "The 800-line repository split moves query functions verbatim into services/orders/queries.py with no change to SQL or session setup, and it is not in the deploy that precedes the alert. Large diff, low risk.",
       "suggested_action": "investigate"
     }
   ],
-  "likely_culprit_sha": "f6a7b8c9d0",
+  "likely_culprit_sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
   "no_culprit_reason": null
 }

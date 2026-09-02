@@ -1,6 +1,6 @@
 {
   "impact_narrative": "Order queries are queueing behind a table lock, degrading roughly 450 order requests per minute.",
-  "cause_summary": "Migration commit b2c3d4e5f6 creates an index on orders.customer_id without CONCURRENTLY, holding a lock that blocks reads while the index builds.",
+  "cause_summary": "Migration commit d770357e9b creates an index on orders.customer_id without CONCURRENTLY, holding a lock that blocks reads while the index builds.",
   "runbook_citation": {
     "slug": "orders-database",
     "heading_path": "Orders Database Runbook > Migration lock contention",

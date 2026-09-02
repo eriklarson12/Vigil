@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 
 import pytest
 
+from tests.conftest import planted_culprit
+
 pytestmark = pytest.mark.integration
 
 ROOT = pathlib.Path(__file__).parent.parent.parent
@@ -76,7 +78,7 @@ async def test_fire_brief_resolve_postmortem(client):
 
     detail = (await c.get(f"/api/incidents/{incident['id']}")).json()
     culprits = [cc for cc in detail["commit_candidates"] if cc["llm_rank"] == 1]
-    assert culprits and culprits[0]["sha"] == "a1b2c3d4e5"
+    assert culprits and culprits[0]["sha"] == planted_culprit("bad_deploy")
     briefs = [e for e in detail["events"] if e["event_type"] == "brief_posted"]
     assert len(briefs) == 1
 

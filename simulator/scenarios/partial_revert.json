@@ -16,7 +16,9 @@
   "deploys": [
     {
       "service": "checkout",
-      "commit_shas": ["9a8b7c6d5e"],
+      "commit_shas": [
+        "02c238690b53e2b3bf1568f979d9e00efcf48f95"
+      ],
       "minutes_before_alert": 35
     }
   ]

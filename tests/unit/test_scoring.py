@@ -10,7 +10,13 @@ from datetime import timedelta
 
 import pytest
 
-from tests.conftest import ALERT_TIME, ROOT, load_scenario
+from tests.conftest import (
+    ALERT_TIME,
+    ROOT,
+    load_commit_fixture,
+    load_scenario,
+    planted_culprit,
+)
 from vigil.commits.github import load_fixture_commits
 from vigil.commits.scoring import glob_to_regex, score_commits
 from vigil.config import get_settings
@@ -107,26 +113,24 @@ class TestGoldenValues:
         assert results["aaaa1111"] == pytest.approx(0.6)  # the reverted commit gets the bonus
 
 
-CULPRITS = {
-    "bad_deploy": ("checkout", "a1b2c3d4e5"),
-    "db_migration_lock": ("orders", "b2c3d4e5f6"),
-    "memory_leak": ("inventory", "c3d4e5f6a7"),
-    "config_typo": ("checkout", "d4e5f6a7b8"),
-    "dependency_bump": ("orders", "e5f6a7b8c9"),
-    "partial_revert": ("checkout", "9a8b7c6d5e"),
-    "shared_db_saturation": ("payments-db", "b7c8d9e0f1"),
-    "auth_key_rotation": ("auth", "e1f2a3b4c5"),
-    "hotfix_regression": ("orders", "f6a7b8c9d0"),
-}
+# Ground truth is read from the fixtures, not restated here: R2 rewrites every sha to the
+# demo repo's real one, and a constant in this file would have to be hand-edited to match.
+SCENARIOS = sorted(p.stem for p in (ROOT / "tests" / "fixtures" / "github").glob("*.json"))
+CULPRITS = {name: planted_culprit(name) for name in SCENARIOS if planted_culprit(name)}
 # Scenarios with no single planted culprit: cert_expiry has no candidate above the
 # floor at all, ambiguous_latency has three that the scorer cannot separate.
 NO_SINGLE_CULPRIT = {"cert_expiry", "ambiguous_latency"}
 
 
-def _score_scenario(name: str, service: str, catalog):
+def _service_for(name: str) -> str:
+    return load_scenario(name)["alert"]["labels"]["service"]
+
+
+def _score_scenario(name: str, catalog, service: str | None = None):
     settings = get_settings()
     commits = load_fixture_commits(settings, name, ALERT_TIME)
     scenario = load_scenario(name)
+    service = service or _service_for(name)
     deploys = [
         {
             "service": d["service"],
@@ -144,21 +148,23 @@ def _score_scenario(name: str, service: str, catalog):
 
 @pytest.mark.parametrize("name", sorted(CULPRITS))
 def test_planted_culprit_ranks_first(name, catalog):
-    service, culprit = CULPRITS[name]
-    scores = _score_scenario(name, service, catalog)
+    culprit = CULPRITS[name]
+    scores = _score_scenario(name, catalog)
     assert scores[0]["sha"] == culprit, f"{name}: expected {culprit} first, got {scores[:2]}"
     assert scores[0]["score"] >= 0.15  # survives the LLM-gate floor
 
 
 def test_cert_expiry_has_no_candidate_above_floor(catalog):
-    scores = _score_scenario("cert_expiry", "checkout", catalog)
+    scores = _score_scenario("cert_expiry", catalog)
     assert all(s["score"] < 0.15 for s in scores), scores[:2]
 
 
 def test_partial_revert_ranks_the_reverted_commit_above_its_revert(catalog):
     """The revert is the newest touch of the failing file; the commit it reverts wins."""
-    scores = {s["sha"]: s for s in _score_scenario("partial_revert", "checkout", catalog)}
-    reverted, revert = scores["9a8b7c6d5e"], scores["4f3e2d1c0b"]
+    scores = {s["sha"]: s for s in _score_scenario("partial_revert", catalog)}
+    commits = load_commit_fixture("partial_revert")["commits"]
+    revert_sha = next(c["sha"] for c in commits if c["message"].startswith('Revert "'))
+    reverted, revert = scores[CULPRITS["partial_revert"]], scores[revert_sha]
     assert reverted["score"] > revert["score"]
     assert revert["feature_scores"]["f_msg"] == 0.0
     assert reverted["feature_scores"]["f_msg"] >= 0.6
@@ -166,17 +172,16 @@ def test_partial_revert_ranks_the_reverted_commit_above_its_revert(catalog):
 
 def test_ambiguous_latency_has_three_inseparable_candidates(catalog):
     """The scenario's point: scoring hands the LLM real candidates it cannot rank apart."""
-    scores = _score_scenario("ambiguous_latency", "checkout", catalog)
+    scores = _score_scenario("ambiguous_latency", catalog)
     above_floor = [s for s in scores if s["score"] >= 0.15]
     assert len(above_floor) == 3
     assert above_floor[0]["score"] - above_floor[1]["score"] < 0.02
 
 
-def test_culprit_map_covers_every_fixture():
+def test_every_fixture_declares_its_ground_truth():
     """R2 regenerates these fixtures from a real repo; a scenario added or dropped
     there must not silently escape the rank-1 assertions above."""
-    stems = {p.stem for p in (ROOT / "tests" / "fixtures" / "github").glob("*.json")}
-    assert stems == set(CULPRITS) | NO_SINGLE_CULPRIT
+    assert set(SCENARIOS) == set(CULPRITS) | NO_SINGLE_CULPRIT
 
 
 def test_glob_double_star():

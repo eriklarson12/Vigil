@@ -1,19 +1,34 @@
 {
   "summary": "A dynamic pricing rollout recomputed prices at charge time, so quotes and charges disagreed and 6.3% of payments were rejected. A revert was merged but never deployed, leaving the bad code live. Vigil surfaced the reverted commit as the culprit and the incident was resolved by deploying the revert.",
   "timeline": [
-    {"time": "T-2h30m", "event": "Commit 9a8b7c6d5e (dynamic pricing engine) merged and deployed to checkout."},
-    {"time": "T-24m", "event": "Revert 4f3e2d1c0b merged on main; no deploy followed."},
-    {"time": "T+0m", "event": "PaymentFailures alert fired for checkout (6.3% price mismatch rejections)."},
-    {"time": "T+1m", "event": "Vigil brief posted: 9a8b7c6d5e flagged at 0.88 confidence, boosted by the merged-but-undeployed revert."},
-    {"time": "T+resolution", "event": "Incident marked resolved after the revert was deployed."}
+    {
+      "time": "T-2h30m",
+      "event": "Commit 02c238690b (dynamic pricing engine) merged and deployed to checkout."
+    },
+    {
+      "time": "T-24m",
+      "event": "Revert 8957606ede merged on main; no deploy followed."
+    },
+    {
+      "time": "T+0m",
+      "event": "PaymentFailures alert fired for checkout (6.3% price mismatch rejections)."
+    },
+    {
+      "time": "T+1m",
+      "event": "Vigil brief posted: 02c238690b flagged at 0.88 confidence, boosted by the merged-but-undeployed revert."
+    },
+    {
+      "time": "T+resolution",
+      "event": "Incident marked resolved after the revert was deployed."
+    }
   ],
-  "root_cause": "Commit 9a8b7c6d5e routed quote_total through dynamic_price behind the dynamic_pricing flag and recomputed the price at charge time. Under load the two computations produced different totals, and the payment gateway rejected the charge as a price mismatch.",
+  "root_cause": "Commit 02c238690b routed quote_total through dynamic_price behind the dynamic_pricing flag and recomputed the price at charge time. Under load the two computations produced different totals, and the payment gateway rejected the charge as a price mismatch.",
   "contributing_factors": [
     "The revert was merged without a deploy, so main looked healthy while production did not.",
     "The pricing path had no invariant asserting that the charged amount equals the quoted amount."
   ],
   "impact": "Roughly 6% of purchase attempts failed for the duration of the incident, against a 1,200 requests/minute checkout baseline.",
-  "resolution": "Deployed the existing revert 4f3e2d1c0b; the payment failure rate returned to baseline within minutes.",
+  "resolution": "Deployed the existing revert 8957606ede; the payment failure rate returned to baseline within minutes.",
   "went_well": [
     "The merged revert was treated as evidence, so the culprit ranked first despite being two and a half hours old.",
     "No manual git archaeology was needed to connect the revert to the live deploy."
@@ -23,8 +38,20 @@
     "Quote and charge totals were computed twice with no cross-check."
   ],
   "action_items": [
-    {"description": "Carry the quoted total through to the charge and assert equality before calling the gateway.", "owner": "@erik", "priority": "P0"},
-    {"description": "Alert when a revert of a deployed commit stays undeployed for more than 15 minutes.", "owner": "@erik", "priority": "P1"},
-    {"description": "Add a load test that compares quoted and charged totals across concurrent carts.", "owner": "on-call", "priority": "P2"}
+    {
+      "description": "Carry the quoted total through to the charge and assert equality before calling the gateway.",
+      "owner": "@erik",
+      "priority": "P0"
+    },
+    {
+      "description": "Alert when a revert of a deployed commit stays undeployed for more than 15 minutes.",
+      "owner": "@erik",
+      "priority": "P1"
+    },
+    {
+      "description": "Add a load test that compares quoted and charged totals across concurrent carts.",
+      "owner": "on-call",
+      "priority": "P2"
+    }
   ]
 }

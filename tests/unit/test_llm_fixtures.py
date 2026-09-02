@@ -6,6 +6,7 @@ import pathlib
 
 import pytest
 
+from tests.conftest import planted_culprit
 from vigil.commits.schemas import CommitAnalysis
 from vigil.config import get_settings
 from vigil.llm.client import FakeLLMClient
@@ -31,7 +32,7 @@ async def test_fake_client_resolves_scenario_from_prompt():
     result = await client.generate_structured(
         "system", "## Alert\nscenario: bad_deploy\n…", CommitAnalysis, "commit_ranking"
     )
-    assert result.likely_culprit_sha == "a1b2c3d4e5"
+    assert result.likely_culprit_sha == planted_culprit("bad_deploy")
 
 
 async def test_fake_client_falls_back_to_default():

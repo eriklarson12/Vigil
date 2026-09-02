@@ -1,249 +1,249 @@
 {
-  "incident": {
-    "id": "a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
-    "service": "checkout",
-    "title": "TLSHandshakeErrors on checkout",
-    "severity": "SEV1",
-    "status": "postmortem_done",
-    "slack_message_ts": "mock-a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
-    "resolution_source": "alertmanager",
-    "created_at": "2026-08-19 22:16:48.467411+00:00",
-    "resolved_at": "2026-08-19 22:16:50.506698+00:00"
-  },
-  "events": [
-    {
-      "event_type": "brief_posted",
-      "payload": {
-        "slack_payload": {
-          "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 TLSHandshakeErrors",
-          "attachments": [
-            {
-              "color": "#E01E5A",
-              "blocks": [
-                {
-                  "text": {
-                    "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 TLSHandshakeErrors",
-                    "type": "plain_text"
-                  },
-                  "type": "header"
-                },
-                {
-                  "text": {
-                    "text": "*Impact*\nAll TLS clients hitting checkout ingress are failing handshakes, blocking roughly 1,200 purchase attempts per minute.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Likely cause:* no likely commit identified \u2014 No commit in the last 48h scored above 0.15 for this service\nNo recent commit plausibly explains this \u2014 the certificate itself has expired ('certificate has expired' in client errors), which is an infrastructure expiry, not a code change.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Runbook:* `tls-certificates` \u2192 TLS Certificate Runbook > Expired certificate on ingress\n_Walks through renewing and rotating the ingress certificate immediately._",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "text": {
-                    "text": "*Next steps*\n1. Renew the ingress certificate now (runbook has the cert-manager and manual paths).\n2. Verify handshake success with openssl s_client against the ingress.\n3. Add a 21-day expiry alert on certificate lifetimes.",
-                    "type": "mrkdwn"
-                  },
-                  "type": "section"
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "text": "incident `a1a4973c-b6f3-49b2-a10f-b52b2ccd240c` \u00b7 started 2026-08-19T22:16:48.450150+00:00",
-                      "type": "mrkdwn"
-                    }
-                  ]
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "text": {
-                        "text": "Mark resolved",
-                        "type": "plain_text"
-                      },
-                      "type": "button",
-                      "style": "primary",
-                      "value": "a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
-                      "action_id": "resolve_incident"
-                    },
-                    {
-                      "url": "http://localhost:5173/incidents/a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
-                      "text": {
-                        "text": "Dashboard",
-                        "type": "plain_text"
-                      },
-                      "type": "button"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      },
-      "created_at": "2026-08-19 22:16:48.488067+00:00"
-    },
-    {
-      "event_type": "triage_finalized",
-      "payload": {
-        "chunks": 4,
-        "errors": {},
-        "scored": 4,
-        "culprit": null,
+    "incident": {
+        "id": "0c6973a2-09d5-4538-8594-73a9669dccc7",
+        "service": "checkout",
+        "title": "TLSHandshakeErrors on checkout",
         "severity": "SEV1",
-        "llm_calls": 1
-      },
-      "created_at": "2026-08-19 22:16:48.490150+00:00"
+        "status": "postmortem_done",
+        "slack_message_ts": "mock-0c6973a2-09d5-4538-8594-73a9669dccc7",
+        "resolution_source": "alertmanager",
+        "created_at": "2026-09-02 05:45:24.337445+00:00",
+        "resolved_at": "2026-09-02 05:45:26.375922+00:00"
     },
-    {
-      "event_type": "resolved",
-      "payload": {
-        "source": "alertmanager"
-      },
-      "created_at": "2026-08-19 22:16:50.508099+00:00"
-    },
-    {
-      "event_type": "postmortem_posted",
-      "payload": {
-        "slack_payload": {
-          "text": "Postmortem for incident a1a4973c-b6f3-49b2-a10f-b52b2ccd240c",
-          "blocks": [
-            {
-              "text": {
-                "text": "\ud83d\udcdd Postmortem",
-                "type": "plain_text"
-              },
-              "type": "header"
+    "events": [
+        {
+            "event_type": "brief_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 TLSHandshakeErrors",
+                    "attachments": [
+                        {
+                            "color": "#E01E5A",
+                            "blocks": [
+                                {
+                                    "text": {
+                                        "text": "\ud83d\udd34 SEV1 \u00b7 checkout \u00b7 TLSHandshakeErrors",
+                                        "type": "plain_text"
+                                    },
+                                    "type": "header"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Impact*\nAll TLS clients hitting checkout ingress are failing handshakes, blocking roughly 1,200 purchase attempts per minute.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Likely cause:* no likely commit identified \u2014 No commit in the last 48h scored above 0.15 for this service\nNo recent commit plausibly explains this \u2014 the certificate itself has expired ('certificate has expired' in client errors), which is an infrastructure expiry, not a code change.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Runbook:* `tls-certificates` \u2192 TLS Certificate Runbook > Expired certificate on ingress\n_Walks through renewing and rotating the ingress certificate immediately._",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "text": {
+                                        "text": "*Next steps*\n1. Renew the ingress certificate now (runbook has the cert-manager and manual paths).\n2. Verify handshake success with openssl s_client against the ingress.\n3. Add a 21-day expiry alert on certificate lifetimes.",
+                                        "type": "mrkdwn"
+                                    },
+                                    "type": "section"
+                                },
+                                {
+                                    "type": "context",
+                                    "elements": [
+                                        {
+                                            "text": "incident `0c6973a2-09d5-4538-8594-73a9669dccc7` \u00b7 started 2026-09-02T05:45:24.320510+00:00",
+                                            "type": "mrkdwn"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "actions",
+                                    "elements": [
+                                        {
+                                            "text": {
+                                                "text": "Mark resolved",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button",
+                                            "style": "primary",
+                                            "value": "0c6973a2-09d5-4538-8594-73a9669dccc7",
+                                            "action_id": "resolve_incident"
+                                        },
+                                        {
+                                            "url": "http://localhost:5173/incidents/0c6973a2-09d5-4538-8594-73a9669dccc7",
+                                            "text": {
+                                                "text": "Dashboard",
+                                                "type": "plain_text"
+                                            },
+                                            "type": "button"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
             },
-            {
-              "text": {
-                "text": "# Postmortem: TLSHandshakeErrors on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA production alert was triaged automatically by Vigil, briefed to on-call, and resolved. Details are captured in the timeline and analysis below.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | Alert fired and was ingested by Vigil. |\n| T+1m | Triage brief posted to the on-call channel. |\n| T+resolution | Incident marked resolved. |\n\n## Root cause\nRoot cause undetermined from the automated analysis; the leading hypotheses from the retrieved evidence are recorded in the incident's commit-candidate rationales and runbook citation.\n\n## Contributing factors\n- See commit-candidate analysis in the incident record.\n\n## Impact\nSee the deterministic impact figures recorded on the incident (severity, estimated affected requests, duration).\n\n## Resolution\nResolved by on-call action; see the resolution source recorded on the incident.\n\n## What went well\n- Automated brief delivered the alert context, candidate commits, and runbook in one place.\n\n## What went poorly\n- Automated analysis could not pinpoint a root cause with high confidence.\n\n## Action items\n- **P1** Review the incident record and confirm or correct the root-cause hypothesis. _(owner: on-call)_\n- **P2** Update the relevant runbook with what actually fixed the issue. _(owner: on-call)_",
-                "type": "mrkdwn"
-              },
-              "type": "section"
-            }
-          ]
+            "created_at": "2026-09-02 05:45:24.358661+00:00"
+        },
+        {
+            "event_type": "triage_finalized",
+            "payload": {
+                "chunks": 4,
+                "errors": {},
+                "scored": 4,
+                "culprit": null,
+                "severity": "SEV1",
+                "llm_calls": 1
+            },
+            "created_at": "2026-09-02 05:45:24.361443+00:00"
+        },
+        {
+            "event_type": "resolved",
+            "payload": {
+                "source": "alertmanager"
+            },
+            "created_at": "2026-09-02 05:45:26.377165+00:00"
+        },
+        {
+            "event_type": "postmortem_posted",
+            "payload": {
+                "slack_payload": {
+                    "text": "Postmortem for incident 0c6973a2-09d5-4538-8594-73a9669dccc7",
+                    "blocks": [
+                        {
+                            "text": {
+                                "text": "\ud83d\udcdd Postmortem",
+                                "type": "plain_text"
+                            },
+                            "type": "header"
+                        },
+                        {
+                            "text": {
+                                "text": "# Postmortem: TLSHandshakeErrors on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA production alert was triaged automatically by Vigil, briefed to on-call, and resolved. Details are captured in the timeline and analysis below.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | Alert fired and was ingested by Vigil. |\n| T+1m | Triage brief posted to the on-call channel. |\n| T+resolution | Incident marked resolved. |\n\n## Root cause\nRoot cause undetermined from the automated analysis; the leading hypotheses from the retrieved evidence are recorded in the incident's commit-candidate rationales and runbook citation.\n\n## Contributing factors\n- See commit-candidate analysis in the incident record.\n\n## Impact\nSee the deterministic impact figures recorded on the incident (severity, estimated affected requests, duration).\n\n## Resolution\nResolved by on-call action; see the resolution source recorded on the incident.\n\n## What went well\n- Automated brief delivered the alert context, candidate commits, and runbook in one place.\n\n## What went poorly\n- Automated analysis could not pinpoint a root cause with high confidence.\n\n## Action items\n- **P1** Review the incident record and confirm or correct the root-cause hypothesis. _(owner: on-call)_\n- **P2** Update the relevant runbook with what actually fixed the issue. _(owner: on-call)_",
+                                "type": "mrkdwn"
+                            },
+                            "type": "section"
+                        }
+                    ]
+                }
+            },
+            "created_at": "2026-09-02 05:45:26.391263+00:00"
         }
-      },
-      "created_at": "2026-08-19 22:16:50.521975+00:00"
+    ],
+    "commit_candidates": [
+        {
+            "sha": "cd41a49c01ecc29a25449d4493ac19ea055e3a66",
+            "message": "docs: update onboarding guide",
+            "author": "dev-a",
+            "committed_at": "2026-09-02 00:45:23.600510+00:00",
+            "files": [
+                {
+                    "path": "docs/onboarding.md",
+                    "additions": 30,
+                    "deletions": 4
+                }
+            ],
+            "heuristic_score": 0.0546,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.514689,
+                "f_time": 0.434584,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        },
+        {
+            "sha": "6d9970a5bcc7b4747b4b6312b1deedb95c8b2a96",
+            "message": "test: add orders repository tests",
+            "author": "dev-b",
+            "committed_at": "2026-09-01 21:45:23.600510+00:00",
+            "files": [
+                {
+                    "path": "services/orders/tests/test_repo.py",
+                    "additions": 90,
+                    "deletions": 0
+                }
+            ],
+            "heuristic_score": 0.0433,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.653014,
+                "f_time": 0.263588,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        },
+        {
+            "sha": "3431f61574f0c9ad129fec669dc3efec581830ca",
+            "message": "feat: inventory reorder threshold",
+            "author": "dev-c",
+            "committed_at": "2026-09-01 07:45:23.600510+00:00",
+            "files": [
+                {
+                    "path": "services/inventory/reorder.py",
+                    "additions": 45,
+                    "deletions": 3
+                }
+            ],
+            "heuristic_score": 0.0192,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.563399,
+                "f_time": 0.025561,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        },
+        {
+            "sha": "20ec3fc9e777743b09918da1f6db8408cb363ab6",
+            "message": "chore: tidy gitignore",
+            "author": "dev-d",
+            "committed_at": "2026-08-31 13:45:23.600510+00:00",
+            "files": [
+                {
+                    "path": ".gitignore",
+                    "additions": 2,
+                    "deletions": 0
+                }
+            ],
+            "heuristic_score": 0.0049,
+            "feature_scores": {
+                "f_msg": 0,
+                "f_path": 0.0,
+                "f_risk": 0.0,
+                "f_size": 0.15904,
+                "f_time": 0.001273,
+                "f_deploy": 0.0
+            },
+            "llm_rank": null,
+            "llm_confidence": null,
+            "llm_rationale": null
+        }
+    ],
+    "postmortem": {
+        "markdown": "# Postmortem: TLSHandshakeErrors on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA production alert was triaged automatically by Vigil, briefed to on-call, and resolved. Details are captured in the timeline and analysis below.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | Alert fired and was ingested by Vigil. |\n| T+1m | Triage brief posted to the on-call channel. |\n| T+resolution | Incident marked resolved. |\n\n## Root cause\nRoot cause undetermined from the automated analysis; the leading hypotheses from the retrieved evidence are recorded in the incident's commit-candidate rationales and runbook citation.\n\n## Contributing factors\n- See commit-candidate analysis in the incident record.\n\n## Impact\nSee the deterministic impact figures recorded on the incident (severity, estimated affected requests, duration).\n\n## Resolution\nResolved by on-call action; see the resolution source recorded on the incident.\n\n## What went well\n- Automated brief delivered the alert context, candidate commits, and runbook in one place.\n\n## What went poorly\n- Automated analysis could not pinpoint a root cause with high confidence.\n\n## Action items\n- **P1** Review the incident record and confirm or correct the root-cause hypothesis. _(owner: on-call)_\n- **P2** Update the relevant runbook with what actually fixed the issue. _(owner: on-call)_",
+        "model_used": "gemini-3.6-flash",
+        "created_at": "2026-09-02 05:45:26.388203+00:00"
     }
-  ],
-  "commit_candidates": [
-    {
-      "sha": "1212aaaa34",
-      "message": "docs: update onboarding guide",
-      "author": "dev-a",
-      "committed_at": "2026-08-19 17:16:48.450150+00:00",
-      "files": [
-        {
-          "path": "docs/onboarding.md",
-          "additions": 30,
-          "deletions": 4
-        }
-      ],
-      "heuristic_score": 0.0546,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.514689,
-        "f_time": 0.434598,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    },
-    {
-      "sha": "3434bbbb56",
-      "message": "test: add orders repository tests",
-      "author": "dev-b",
-      "committed_at": "2026-08-19 14:16:48.450150+00:00",
-      "files": [
-        {
-          "path": "services/orders/tests/test_repo.py",
-          "additions": 90,
-          "deletions": 0
-        }
-      ],
-      "heuristic_score": 0.0433,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.653014,
-        "f_time": 0.263597,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    },
-    {
-      "sha": "5656cccc78",
-      "message": "feat: inventory reorder threshold",
-      "author": "dev-c",
-      "committed_at": "2026-08-19 00:16:48.450150+00:00",
-      "files": [
-        {
-          "path": "services/inventory/reorder.py",
-          "additions": 45,
-          "deletions": 3
-        }
-      ],
-      "heuristic_score": 0.0192,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.563399,
-        "f_time": 0.025562,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    },
-    {
-      "sha": "7878dddd90",
-      "message": "chore: tidy gitignore",
-      "author": "dev-d",
-      "committed_at": "2026-08-18 06:16:48.450150+00:00",
-      "files": [
-        {
-          "path": ".gitignore",
-          "additions": 2,
-          "deletions": 0
-        }
-      ],
-      "heuristic_score": 0.0049,
-      "feature_scores": {
-        "f_msg": 0,
-        "f_path": 0.0,
-        "f_risk": 0.0,
-        "f_size": 0.15904,
-        "f_time": 0.001273,
-        "f_deploy": 0.0
-      },
-      "llm_rank": null,
-      "llm_confidence": null,
-      "llm_rationale": null
-    }
-  ],
-  "postmortem": {
-    "markdown": "# Postmortem: TLSHandshakeErrors on checkout\n\n**Severity:** SEV1 \u00b7 **Service:** checkout \u00b7 **Resolved via:** alertmanager\n\n## Summary\nA production alert was triaged automatically by Vigil, briefed to on-call, and resolved. Details are captured in the timeline and analysis below.\n\n## Timeline\n| Time | Event |\n|---|---|\n| T+0m | Alert fired and was ingested by Vigil. |\n| T+1m | Triage brief posted to the on-call channel. |\n| T+resolution | Incident marked resolved. |\n\n## Root cause\nRoot cause undetermined from the automated analysis; the leading hypotheses from the retrieved evidence are recorded in the incident's commit-candidate rationales and runbook citation.\n\n## Contributing factors\n- See commit-candidate analysis in the incident record.\n\n## Impact\nSee the deterministic impact figures recorded on the incident (severity, estimated affected requests, duration).\n\n## Resolution\nResolved by on-call action; see the resolution source recorded on the incident.\n\n## What went well\n- Automated brief delivered the alert context, candidate commits, and runbook in one place.\n\n## What went poorly\n- Automated analysis could not pinpoint a root cause with high confidence.\n\n## Action items\n- **P1** Review the incident record and confirm or correct the root-cause hypothesis. _(owner: on-call)_\n- **P2** Update the relevant runbook with what actually fixed the issue. _(owner: on-call)_",
-    "model_used": "gemini-3.6-flash",
-    "created_at": "2026-08-19 22:16:50.517363+00:00"
-  }
 }

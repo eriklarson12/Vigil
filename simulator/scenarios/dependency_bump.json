@@ -16,7 +16,9 @@
   "deploys": [
     {
       "service": "orders",
-      "commit_shas": ["e5f6a7b8c9"],
+      "commit_shas": [
+        "abc1a46fb0b2961db54b1c84726a553e19218447"
+      ],
       "minutes_before_alert": 35
     }
   ]
