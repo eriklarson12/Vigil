@@ -1,11 +1,18 @@
 {
+  "culprit": "b2c3d4e5f6",
   "commits": [
     {
       "sha": "b2c3d4e5f6",
       "message": "add index on orders.customer_id",
       "author": "dev-a",
       "hours_before_alert": 0.67,
-      "files": [{"path": "services/orders/migrations/0042_add_customer_index.sql", "additions": 18, "deletions": 0}],
+      "files": [
+        {
+          "path": "services/orders/migrations/0042_add_customer_index.sql",
+          "additions": 18,
+          "deletions": 0
+        }
+      ],
       "patch": "--- services/orders/migrations/0042_add_customer_index.sql\n@@ +1,18 @@\n+-- speed up customer order history\n+CREATE INDEX orders_customer_id_idx ON orders (customer_id);\n+-- (note: not CONCURRENTLY)"
     },
     {
@@ -13,7 +20,13 @@
       "message": "fix: correct rounding in order totals",
       "author": "dev-b",
       "hours_before_alert": 2,
-      "files": [{"path": "services/orders/money.py", "additions": 12, "deletions": 6}],
+      "files": [
+        {
+          "path": "services/orders/money.py",
+          "additions": 12,
+          "deletions": 6
+        }
+      ],
       "patch": "--- services/orders/money.py\n@@ -18,6 +18,12 @@\n-    return round(total, 2)\n+    return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)"
     },
     {
@@ -21,7 +34,13 @@
       "message": "chore: tidy frontend styles",
       "author": "dev-c",
       "hours_before_alert": 9,
-      "files": [{"path": "frontend/styles.css", "additions": 30, "deletions": 22}],
+      "files": [
+        {
+          "path": "frontend/styles.css",
+          "additions": 30,
+          "deletions": 22
+        }
+      ],
       "patch": "--- frontend/styles.css\n@@ css only @@"
     },
     {
@@ -29,7 +48,13 @@
       "message": "docs: refresh on-call runbook links",
       "author": "dev-d",
       "hours_before_alert": 20,
-      "files": [{"path": "docs/oncall.md", "additions": 8, "deletions": 3}],
+      "files": [
+        {
+          "path": "docs/oncall.md",
+          "additions": 8,
+          "deletions": 3
+        }
+      ],
       "patch": "--- docs/oncall.md\n@@ documentation only @@"
     }
   ]

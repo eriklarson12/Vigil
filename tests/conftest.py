@@ -37,6 +37,7 @@ import pytest  # noqa: E402
 from vigil.impact.catalog import ServiceCatalog  # noqa: E402
 
 SCENARIOS_DIR = ROOT / "simulator" / "scenarios"
+COMMITS_DIR = ROOT / "tests" / "fixtures" / "github"
 ALERT_TIME = datetime(2026, 7, 1, 12, 0, 0, tzinfo=UTC)
 
 
@@ -47,6 +48,19 @@ def catalog() -> ServiceCatalog:
 
 def load_scenario(name: str) -> dict:
     return json.loads((SCENARIOS_DIR / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def load_commit_fixture(name: str) -> dict:
+    return json.loads((COMMITS_DIR / f"{name}.json").read_text(encoding="utf-8"))
+
+
+def planted_culprit(name: str) -> str | None:
+    """The sha the scenario plants, read from the fixture that owns it.
+
+    Ground truth lives in the fixture rather than in a constant here so that R2's rewrite to
+    the demo repo's real shas needs no hand edits in any test.
+    """
+    return load_commit_fixture(name)["culprit"]
 
 
 @pytest.fixture(scope="session")

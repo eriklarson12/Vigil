@@ -1,11 +1,18 @@
 {
+  "culprit": "f6a7b8c9d0",
   "commits": [
     {
       "sha": "f6a7b8c9d0",
       "message": "hotfix: raise statement timeout on orders reads to unblock retries",
       "author": "dev-a",
       "hours_before_alert": 0.6,
-      "files": [{"path": "services/orders/db.py", "additions": 4, "deletions": 2}],
+      "files": [
+        {
+          "path": "services/orders/db.py",
+          "additions": 4,
+          "deletions": 2
+        }
+      ],
       "patch": "--- services/orders/db.py\n@@ -14,2 +14,4 @@ async def read_session():\n-    await conn.execute(\"SET statement_timeout = '5s'\")\n+    # temporary: retries were tripping the 5s cap during the backlog drain\n+    await conn.execute(\"SET statement_timeout = '0'\")"
     },
     {
@@ -14,8 +21,16 @@
       "author": "dev-b",
       "hours_before_alert": 1.2,
       "files": [
-        {"path": "services/orders/repo.py", "additions": 60, "deletions": 380},
-        {"path": "services/orders/queries.py", "additions": 360, "deletions": 0}
+        {
+          "path": "services/orders/repo.py",
+          "additions": 60,
+          "deletions": 380
+        },
+        {
+          "path": "services/orders/queries.py",
+          "additions": 360,
+          "deletions": 0
+        }
       ],
       "patch": "--- services/orders/repo.py\n@@ -1,380 +1,60 @@ (split out)\n--- services/orders/queries.py\n@@ +1,360 @@ (moved verbatim)"
     },
@@ -24,7 +39,13 @@
       "message": "feat: inventory low-stock webhook",
       "author": "dev-c",
       "hours_before_alert": 9,
-      "files": [{"path": "services/inventory/webhooks.py", "additions": 120, "deletions": 4}],
+      "files": [
+        {
+          "path": "services/inventory/webhooks.py",
+          "additions": 120,
+          "deletions": 4
+        }
+      ],
       "patch": "--- services/inventory/webhooks.py\n@@ +1,120 @@ (new file)"
     },
     {
@@ -32,7 +53,13 @@
       "message": "docs: orders API pagination notes",
       "author": "dev-d",
       "hours_before_alert": 24,
-      "files": [{"path": "docs/orders-api.md", "additions": 18, "deletions": 3}],
+      "files": [
+        {
+          "path": "docs/orders-api.md",
+          "additions": 18,
+          "deletions": 3
+        }
+      ],
       "patch": "--- docs/orders-api.md\n@@ documentation only @@"
     }
   ]

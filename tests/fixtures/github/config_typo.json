@@ -1,11 +1,18 @@
 {
+  "culprit": "d4e5f6a7b8",
   "commits": [
     {
       "sha": "d4e5f6a7b8",
       "message": "chore: bump db pool timeout for checkout",
       "author": "dev-a",
       "hours_before_alert": 0.75,
-      "files": [{"path": "config/checkout.yaml", "additions": 1, "deletions": 1}],
+      "files": [
+        {
+          "path": "config/checkout.yaml",
+          "additions": 1,
+          "deletions": 1
+        }
+      ],
       "patch": "--- config/checkout.yaml\n@@ -22,1 +22,1 @@\n-db_pool_timeout: 30\n+db_pool_timeout: 30s"
     },
     {
@@ -13,7 +20,13 @@
       "message": "feat: loyalty points accrual",
       "author": "dev-b",
       "hours_before_alert": 1.2,
-      "files": [{"path": "services/orders/loyalty.py", "additions": 150, "deletions": 0}],
+      "files": [
+        {
+          "path": "services/orders/loyalty.py",
+          "additions": 150,
+          "deletions": 0
+        }
+      ],
       "patch": "--- services/orders/loyalty.py\n@@ +1,150 @@ (new file)"
     },
     {
@@ -21,7 +34,13 @@
       "message": "refactor: shared logging helper",
       "author": "dev-c",
       "hours_before_alert": 7,
-      "files": [{"path": "libs/logging.py", "additions": 60, "deletions": 40}],
+      "files": [
+        {
+          "path": "libs/logging.py",
+          "additions": 60,
+          "deletions": 40
+        }
+      ],
       "patch": "--- libs/logging.py\n@@ -10,40 +10,60 @@ structured logging refactor @@"
     },
     {
@@ -29,7 +48,13 @@
       "message": "docs: payment flow diagrams",
       "author": "dev-d",
       "hours_before_alert": 30,
-      "files": [{"path": "docs/payments.md", "additions": 25, "deletions": 2}],
+      "files": [
+        {
+          "path": "docs/payments.md",
+          "additions": 25,
+          "deletions": 2
+        }
+      ],
       "patch": "--- docs/payments.md\n@@ documentation only @@"
     }
   ]

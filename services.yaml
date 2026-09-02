@@ -4,7 +4,7 @@ services:
   checkout:
     tier: 0
     user_facing: true
-    repo: github.com/OWNER/vigil-demo-shop   # replace OWNER after creating the demo repo
+    repo: github.com/eriklarson12/vigil-demo-shop
     path_globs: ["services/checkout/**", "libs/payments/**"]
     dependencies: [payments-db, inventory, auth]
     baseline_rpm: 1200
@@ -14,7 +14,7 @@ services:
   orders:
     tier: 1
     user_facing: true
-    repo: github.com/OWNER/vigil-demo-shop
+    repo: github.com/eriklarson12/vigil-demo-shop
     path_globs: ["services/orders/**"]
     dependencies: [payments-db, inventory]
     baseline_rpm: 450
@@ -24,7 +24,7 @@ services:
   inventory:
     tier: 1
     user_facing: false
-    repo: github.com/OWNER/vigil-demo-shop
+    repo: github.com/eriklarson12/vigil-demo-shop
     path_globs: ["services/inventory/**"]
     dependencies: [payments-db]
     baseline_rpm: 900
@@ -34,7 +34,7 @@ services:
   payments-db:
     tier: 0
     user_facing: false
-    repo: github.com/OWNER/vigil-demo-shop
+    repo: github.com/eriklarson12/vigil-demo-shop
     path_globs: ["db/**", "services/*/migrations/**"]
     dependencies: []
     baseline_rpm: 2000
@@ -44,7 +44,7 @@ services:
   auth:
     tier: 0
     user_facing: false
-    repo: github.com/OWNER/vigil-demo-shop
+    repo: github.com/eriklarson12/vigil-demo-shop
     path_globs: ["services/auth/**"]
     dependencies: []
     baseline_rpm: 1500

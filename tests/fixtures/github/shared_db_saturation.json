@@ -1,4 +1,5 @@
 {
+  "culprit": "b7c8d9e0f1",
   "commits": [
     {
       "sha": "b7c8d9e0f1",
@@ -6,8 +7,16 @@
       "author": "dev-a",
       "hours_before_alert": 0.6,
       "files": [
-        {"path": "db/pool.yaml", "additions": 2, "deletions": 2},
-        {"path": "db/reporting.sql", "additions": 60, "deletions": 0}
+        {
+          "path": "db/pool.yaml",
+          "additions": 2,
+          "deletions": 2
+        },
+        {
+          "path": "db/reporting.sql",
+          "additions": 60,
+          "deletions": 0
+        }
       ],
       "patch": "--- db/pool.yaml\n@@ -8,2 +8,2 @@\n-  max_connections: 40\n-  statement_timeout: 5s\n+  max_connections: 180\n+  statement_timeout: 60s\n--- db/reporting.sql\n@@ +1,60 @@\n+-- nightly revenue rollup, now run on demand from the admin UI\n+SELECT o.id, o.total, p.captured_at FROM orders o JOIN payments p ..."
     },
@@ -16,7 +25,13 @@
       "message": "feat: add order export endpoint",
       "author": "dev-b",
       "hours_before_alert": 1.0,
-      "files": [{"path": "services/orders/export.py", "additions": 140, "deletions": 5}],
+      "files": [
+        {
+          "path": "services/orders/export.py",
+          "additions": 140,
+          "deletions": 5
+        }
+      ],
       "patch": "--- services/orders/export.py\n@@ +1,140 @@ (new endpoint)"
     },
     {
@@ -24,7 +39,13 @@
       "message": "test: add payments-db pool acquisition tests",
       "author": "dev-c",
       "hours_before_alert": 18,
-      "files": [{"path": "db/tests/test_pool.py", "additions": 95, "deletions": 0}],
+      "files": [
+        {
+          "path": "db/tests/test_pool.py",
+          "additions": 95,
+          "deletions": 0
+        }
+      ],
       "patch": "--- db/tests/test_pool.py\n@@ tests only @@"
     },
     {
@@ -32,7 +53,13 @@
       "message": "chore: refresh grafana dashboards",
       "author": "dev-d",
       "hours_before_alert": 26,
-      "files": [{"path": "deploy/grafana/payments.json", "additions": 30, "deletions": 12}],
+      "files": [
+        {
+          "path": "deploy/grafana/payments.json",
+          "additions": 30,
+          "deletions": 12
+        }
+      ],
       "patch": "--- deploy/grafana/payments.json\n@@ dashboard json @@"
     }
   ]

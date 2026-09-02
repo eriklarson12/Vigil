@@ -1,11 +1,18 @@
 {
+  "culprit": null,
   "commits": [
     {
       "sha": "aa11bb22cc",
       "message": "perf: batch payment gateway calls per cart",
       "author": "dev-a",
       "hours_before_alert": 1.5,
-      "files": [{"path": "libs/payments/batch.py", "additions": 90, "deletions": 30}],
+      "files": [
+        {
+          "path": "libs/payments/batch.py",
+          "additions": 90,
+          "deletions": 30
+        }
+      ],
       "patch": "--- libs/payments/batch.py\n@@ -12,10 +12,40 @@ async def authorize_all(items):\n-    return await asyncio.gather(*[authorize(i) for i in items])\n+    async with Batcher(**settings.payments_batch) as b:\n+        return await b.submit_all(items)\n@@ +58,30 @@\n+class Batcher:\n+    ..."
     },
     {
@@ -13,7 +20,13 @@
       "message": "refactor: reuse the checkout http client across requests",
       "author": "dev-b",
       "hours_before_alert": 2.0,
-      "files": [{"path": "services/checkout/http.py", "additions": 60, "deletions": 45}],
+      "files": [
+        {
+          "path": "services/checkout/http.py",
+          "additions": 60,
+          "deletions": 45
+        }
+      ],
       "patch": "--- services/checkout/http.py\n@@ -8,15 +8,30 @@\n-    async with httpx.AsyncClient() as c:\n-        return await c.post(url, json=body)\n+    c = _shared_client()\n+    return await c.post(url, json=body)\n@@ +40,15 @@\n+@lru_cache\n+def _shared_client():\n+    return httpx.AsyncClient(**settings.http_client)"
     },
     {
@@ -21,7 +34,13 @@
       "message": "chore: raise checkout worker concurrency",
       "author": "dev-c",
       "hours_before_alert": 2.2,
-      "files": [{"path": "deploy/checkout.yaml", "additions": 2, "deletions": 2}],
+      "files": [
+        {
+          "path": "deploy/checkout.yaml",
+          "additions": 2,
+          "deletions": 2
+        }
+      ],
       "patch": "--- deploy/checkout.yaml\n@@ -18,2 +18,2 @@\n-  workers: 8\n+  workers: 16"
     },
     {
@@ -29,7 +48,13 @@
       "message": "docs: refresh the latency SLO table",
       "author": "dev-d",
       "hours_before_alert": 14,
-      "files": [{"path": "docs/slo.md", "additions": 22, "deletions": 9}],
+      "files": [
+        {
+          "path": "docs/slo.md",
+          "additions": 22,
+          "deletions": 9
+        }
+      ],
       "patch": "--- docs/slo.md\n@@ documentation only @@"
     }
   ]

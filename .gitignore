@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 dist/
+build/
 *.egg-info/
 node_modules/
 frontend/dist/
@@ -13,4 +14,3 @@ docs/
 tasks/
 .claude/
 CLAUDE.md
-DEPLOYMENT.md

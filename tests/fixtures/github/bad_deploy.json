@@ -1,11 +1,18 @@
 {
+  "culprit": "a1b2c3d4e5",
   "commits": [
     {
       "sha": "a1b2c3d4e5",
       "message": "refactor: extract payment intent handler",
       "author": "dev-a",
       "hours_before_alert": 0.33,
-      "files": [{"path": "services/checkout/handlers/payment.py", "additions": 120, "deletions": 80}],
+      "files": [
+        {
+          "path": "services/checkout/handlers/payment.py",
+          "additions": 120,
+          "deletions": 80
+        }
+      ],
       "patch": "--- services/checkout/handlers/payment.py\n@@ -41,12 +41,8 @@ async def confirm_payment(intent_id: str):\n-    intent = await store.get(intent_id)\n-    if intent.state != IntentState.REQUIRES_CONFIRMATION:\n-        raise InvalidIntentState(intent.state)\n-    return await gateway.confirm(intent)\n+    intent = await store.get(intent_id)\n+    return await gateway.confirm(intent)\n@@ -88,6 +84,20 @@\n+async def _confirm_flow(intent):\n+    # NOTE: state validation moved to middleware (see #482)\n+    ..."
     },
     {
@@ -13,7 +20,13 @@
       "message": "chore: update deploy manifest replica count",
       "author": "dev-b",
       "hours_before_alert": 0.4,
-      "files": [{"path": "deploy/checkout.yaml", "additions": 2, "deletions": 2}],
+      "files": [
+        {
+          "path": "deploy/checkout.yaml",
+          "additions": 2,
+          "deletions": 2
+        }
+      ],
       "patch": "--- deploy/checkout.yaml\n@@ -12,2 +12,2 @@\n-  replicas: 3\n+  replicas: 4"
     },
     {
@@ -21,7 +34,13 @@
       "message": "feat: add gift card support to orders",
       "author": "dev-c",
       "hours_before_alert": 3,
-      "files": [{"path": "services/orders/gift.py", "additions": 200, "deletions": 0}],
+      "files": [
+        {
+          "path": "services/orders/gift.py",
+          "additions": 200,
+          "deletions": 0
+        }
+      ],
       "patch": "--- services/orders/gift.py\n@@ +1,200 @@ (new file)"
     },
     {
@@ -29,7 +48,13 @@
       "message": "docs: update API docs",
       "author": "dev-d",
       "hours_before_alert": 12,
-      "files": [{"path": "docs/api.md", "additions": 40, "deletions": 5}],
+      "files": [
+        {
+          "path": "docs/api.md",
+          "additions": 40,
+          "deletions": 5
+        }
+      ],
       "patch": "--- docs/api.md\n@@ documentation only @@"
     },
     {
@@ -37,7 +62,13 @@
       "message": "test: increase coverage for auth login",
       "author": "dev-e",
       "hours_before_alert": 26,
-      "files": [{"path": "services/auth/tests/test_login.py", "additions": 70, "deletions": 0}],
+      "files": [
+        {
+          "path": "services/auth/tests/test_login.py",
+          "additions": 70,
+          "deletions": 0
+        }
+      ],
       "patch": "--- services/auth/tests/test_login.py\n@@ tests only @@"
     }
   ]
