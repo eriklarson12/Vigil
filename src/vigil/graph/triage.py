@@ -24,7 +24,7 @@ from vigil.graph.state import TriageState
 from vigil.impact.severity import classify
 from vigil.ingest.queue import add_event
 from vigil.llm.client import LLMUnavailable
-from vigil.llm.prompts import build_brief_prompt, build_commit_ranking_prompt
+from vigil.llm.prompts import SHORT_SHA, build_brief_prompt, build_commit_ranking_prompt
 from vigil.llm.schemas import BriefContent
 from vigil.rag.retrieve import hybrid_search
 from vigil.slack.blocks import build_brief
@@ -38,6 +38,37 @@ def _iso(dt: datetime) -> str:
 
 def _parse(iso: str) -> datetime:
     return datetime.fromisoformat(iso)
+
+
+def apply_sha_guards(
+    analysis: CommitAnalysis, top: list[dict[str, Any]], confidence_floor: float
+) -> CommitAnalysis:
+    """Anti-hallucination guards (spec §6.3): drop invented shas, apply the floor.
+
+    `build_commit_ranking_prompt` shows the model `sha[:SHORT_SHA]`, so a verdict names a
+    prefix while the candidates carry full 40-character shas. Comparing the two for equality
+    drops every verdict as invented and reports no culprit — silently, because that is
+    indistinguishable from an honest "none found". Resolving by prefix keeps the guard
+    honest: a sha the model made up still matches no candidate.
+    """
+    by_prefix = {s["sha"][:SHORT_SHA]: s["sha"] for s in top}
+
+    def resolve(sha: str | None) -> str | None:
+        return by_prefix.get((sha or "")[:SHORT_SHA])
+
+    verdicts = [
+        v.model_copy(update={"sha": full}) for v in analysis.verdicts if (full := resolve(v.sha))
+    ]
+    culprit = resolve(analysis.likely_culprit_sha)
+    if culprit:
+        best = max((v.confidence for v in verdicts if v.sha == culprit), default=0.0)
+        if best < confidence_floor:
+            culprit = None
+    return CommitAnalysis(
+        verdicts=verdicts,
+        likely_culprit_sha=culprit,
+        no_culprit_reason=analysis.no_culprit_reason if culprit is None else None,
+    )
 
 
 def build_triage_graph(deps: Deps, checkpointer: Any = None):
@@ -112,21 +143,7 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
         system, user = build_commit_ranking_prompt(state["alert"], state.get("service"), candidates)
         analysis = await deps.llm.generate_structured(system, user, CommitAnalysis, "commit_ranking")
 
-        # Anti-hallucination guards (spec §6.3): drop invented shas, apply floor.
-        valid = {s["sha"] for s in top}
-        verdicts = [v for v in analysis.verdicts if v.sha in valid]
-        culprit = analysis.likely_culprit_sha if analysis.likely_culprit_sha in valid else None
-        if culprit:
-            best = max((v.confidence for v in verdicts if v.sha == culprit), default=0.0)
-            if best < settings.confidence_floor:
-                culprit = None
-        result = CommitAnalysis(
-            verdicts=verdicts,
-            likely_culprit_sha=culprit,
-            no_culprit_reason=analysis.no_culprit_reason
-            if culprit is None
-            else None,
-        )
+        result = apply_sha_guards(analysis, top, settings.confidence_floor)
         return {"commit_analysis": result.model_dump(), "llm_calls_used": 1}
 
     @degrading("retrieve_runbooks", retries=2, backoff=1.0)

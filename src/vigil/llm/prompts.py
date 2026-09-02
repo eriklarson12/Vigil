@@ -4,6 +4,8 @@ Change them there and here together."""
 import json
 from typing import Any
 
+SHORT_SHA = 10  # the sha width the model is shown, and so the width it answers with
+
 COMMIT_RANKING_SYSTEM = """You are the commit-analysis engine of Vigil, an automated incident responder.
 Given a production alert and a set of candidate commits (each pre-scored by
 deterministic heuristics), rank the commits by how plausibly they caused the
@@ -74,7 +76,7 @@ def build_commit_ranking_prompt(
     for c in candidates:
         commit = c["commit"]
         parts += [
-            f"### Commit {commit['sha'][:10]} — heuristic score {c['score']:.2f}",
+            f"### Commit {commit['sha'][:SHORT_SHA]} — heuristic score {c['score']:.2f}",
             f"author: {commit['author']}   committed: {commit['committed_at']}",
             f"message: {commit['message']}",
             "files: "
