@@ -27,6 +27,30 @@ class ServiceCatalog:
         cfg = self.services.get(name)
         return {"name": name, **cfg} if cfg else None
 
+    @staticmethod
+    def normalize_repo(repo: str) -> str:
+        # casefold first: the prefixes are matched case-insensitively too, so
+        # GITHUB.COM/Owner/Repo and github.com/owner/repo are the same target.
+        return (
+            (repo or "")
+            .strip()
+            .casefold()
+            .removeprefix("https://")
+            .removeprefix("github.com/")
+            .removesuffix(".git")
+        )
+
+    def services_for_repo(self, repo: str) -> list[str]:
+        """Services deployed from `repo` (R6: one deployment counts for all of them)."""
+        target = self.normalize_repo(repo)
+        if not target:
+            return []
+        return sorted(
+            name
+            for name, cfg in self.services.items()
+            if self.normalize_repo(cfg.get("repo", "")) == target
+        )
+
     def user_facing_dependents(self, name: str) -> list[str]:
         """BFS over reverse dependency edges -> downstream user-facing services."""
         seen: set[str] = set()

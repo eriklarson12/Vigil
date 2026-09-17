@@ -56,3 +56,40 @@ def test_planted_deploys_ship_only_real_commits(scenario):
 
 def test_every_commit_fixture_has_a_simulator_scenario():
     assert SCENARIOS == sorted(p.stem for p in SCENARIOS_DIR.glob("*.json"))
+
+
+@pytest.mark.parametrize("scenario", SCENARIOS)
+def test_fixture_deployments_ship_only_real_commits(scenario):
+    """Same failure mode as the planted deploys above: f_deploy matches on the full
+    40-character sha, so a stale one here scores 0 without saying anything."""
+    data = json.loads((GITHUB_DIR / f"{scenario}.json").read_text(encoding="utf-8"))
+    known = _shas(scenario)
+    unknown = {d["sha"] for d in data.get("deployments", [])} - known
+    assert not unknown, f"{scenario}: deployments name shas absent from the commit fixture: {unknown}"
+
+
+@pytest.mark.parametrize("scenario", SCENARIOS)
+def test_fixture_deployments_mirror_the_simulator_deploys(scenario):
+    """The fixture's `deployments` is the flattening of the scenario's `deploys[]`: one
+    entry per sha, service dropped (roadmap R6).
+
+    This is what pins "R6 did not move the golden scores". The scoring goldens are built
+    from `simulator/scenarios/*.json`, the fixture replay path from `deployments`; forcing
+    the two to agree by construction is what stops them drifting apart. A `deployments`
+    key on a scenario with no deploys would also lift the 0.3x relevance gate and break
+    the cert_expiry and ambiguous_latency floor tests.
+    """
+    scenario_path = SCENARIOS_DIR / f"{scenario}.json"
+    if not scenario_path.exists():
+        pytest.skip(f"no simulator scenario for {scenario}")
+    deploys = json.loads(scenario_path.read_text(encoding="utf-8")).get("deploys", [])
+    expected = sorted(
+        (sha, d["minutes_before_alert"]) for d in deploys for sha in d["commit_shas"]
+    )
+
+    data = json.loads((GITHUB_DIR / f"{scenario}.json").read_text(encoding="utf-8"))
+    if not expected:
+        assert "deployments" not in data, f"{scenario}: plants no deploy but ships `deployments`"
+        return
+    actual = sorted((d["sha"], d["minutes_before_alert"]) for d in data["deployments"])
+    assert actual == expected, f"{scenario}: fixture deployments drifted from the scenario"

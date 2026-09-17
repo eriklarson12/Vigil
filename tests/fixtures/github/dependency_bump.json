@@ -1,5 +1,11 @@
 {
   "culprit": "abc1a46fb0b2961db54b1c84726a553e19218447",
+  "deployments": [
+    {
+      "sha": "abc1a46fb0b2961db54b1c84726a553e19218447",
+      "minutes_before_alert": 35
+    }
+  ],
   "commits": [
     {
       "sha": "abc1a46fb0b2961db54b1c84726a553e19218447",

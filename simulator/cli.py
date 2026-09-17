@@ -105,7 +105,9 @@ async def _plant_deploys(scenario: dict, now: datetime) -> None:
         for d in deploys:
             finished = now - timedelta(minutes=d["minutes_before_alert"])
             await conn.execute(
-                "INSERT INTO deploy_events (service, commit_shas, finished_at) VALUES (%s, %s, %s)",
+                "INSERT INTO deploy_events (service, commit_shas, finished_at)"
+                " VALUES (%s, %s, %s)"
+                " ON CONFLICT (service, commit_shas, finished_at) DO NOTHING",
                 (d["service"], d["commit_shas"], finished),
             )
     await pool.close()

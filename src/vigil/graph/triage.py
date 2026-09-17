@@ -15,7 +15,7 @@ from langgraph.graph import END, START, StateGraph
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
-from vigil.commits.github import fetch_candidates
+from vigil.commits.github import fetch_candidates, fetch_deployments
 from vigil.commits.schemas import CommitAnalysis
 from vigil.commits.scoring import score_commits
 from vigil.graph.deps import Deps
@@ -82,21 +82,67 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
             await conn.execute("SELECT 1")
         return {"service": service, "errors": {}, "llm_calls_used": 0}
 
+    async def _record_deployments(
+        *, repo: str, starts_at: datetime, scenario_hint: str | None
+    ) -> int:
+        """Repo-level deployments -> one deploy_events row per (service in repo, sha).
+
+        Two invariants a future edit could break silently:
+
+        1. `finished_at` derives from the alert's `starts_at`, never `now()`. That
+           determinism plus the 002 natural key is what makes a resumed run a no-op
+           instead of a second set of rows — LangGraph replays this node when the
+           checkpoint predates it (tests/integration/test_kill_resume.py).
+        2. The fan-out is safe because in every scenario the planted deploy's service
+           equals the alert's service, and the 46 fixture shas are disjoint across
+           scenarios — so a row written for a non-alerting service can never raise
+           f_deploy in the incident that wrote it, nor in the next one.
+        """
+        deployments = await fetch_deployments(
+            repo=repo, settings=settings, starts_at=starts_at, scenario_hint=scenario_hint
+        )
+        names = deps.catalog.services_for_repo(repo)
+        if not deployments or not names:
+            return 0
+        rows = [(name, [d["sha"]], d["finished_at"]) for d in deployments for name in names]
+        async with deps.pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.executemany(
+                    "INSERT INTO deploy_events (service, commit_shas, finished_at)"
+                    " VALUES (%s, %s, %s)"
+                    " ON CONFLICT (service, commit_shas, finished_at) DO NOTHING",
+                    rows,
+                )
+        return len(rows)
+
     @degrading("fetch_commits", retries=2, backoff=2.0)
     async def fetch_commits(state: TriageState) -> dict[str, Any]:
         service = state.get("service")
         if not service or not service.get("repo"):
             return {"commits": [], "errors": {"fetch_commits": "unknown service or no repo configured"}}
         starts_at = _parse(state["alert"]["starts_at"])
+        scenario_hint = state["alert"].get("labels", {}).get("scenario")
         commits = await fetch_candidates(
             repo=service["repo"],
             settings=settings,
             starts_at=starts_at,
-            scenario_hint=state["alert"].get("labels", {}).get("scenario"),
+            scenario_hint=scenario_hint,
         )
         for c in commits:
             c["committed_at"] = _iso(c["committed_at"])
-        return {"commits": commits}
+        out: dict[str, Any] = {"commits": commits}
+        # Degrade separately from the commit fetch: @degrading returns errors with no
+        # `commits` key at all, so letting a deployments failure reach it would discard
+        # a good commit list and render the brief as "commit analysis unavailable" —
+        # blanking the headline over one 0.10-weight feature.
+        try:
+            recorded = await _record_deployments(
+                repo=service["repo"], starts_at=starts_at, scenario_hint=scenario_hint
+            )
+            log.info("deployments_recorded", rows=recorded, repo=service["repo"])
+        except Exception as exc:  # noqa: BLE001 - see above; commits still ship
+            out["errors"] = {"fetch_deployments": f"{type(exc).__name__}: {exc}"[:300]}
+        return out
 
     @degrading("score_commits")
     async def score_commits_node(state: TriageState) -> dict[str, Any]:
