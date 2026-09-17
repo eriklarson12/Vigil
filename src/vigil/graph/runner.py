@@ -58,6 +58,8 @@ PRUNE_SQL = [
     DELETE FROM commit_candidates WHERE llm_rank IS NULL AND incident_id IN (
       SELECT id FROM incidents WHERE created_at < now() - interval '90 days')
     """,
+    # 4. Deploy events: R6 writes these once per incident per service in the repo.
+    "DELETE FROM deploy_events WHERE finished_at < now() - interval '90 days'",
 ]
 
 

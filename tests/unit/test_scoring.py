@@ -190,3 +190,32 @@ def test_glob_double_star():
     assert not glob_to_regex("services/checkout/**").match("services/orders/x.py")
     assert glob_to_regex("config/**/*.json").match("config/app.json")
     assert glob_to_regex("config/**/*.json").match("config/nested/app.json")
+
+
+def test_repo_fanout_scores_identically_to_one_multi_sha_deploy(catalog):
+    """R6 writes one deploy_events row per (service in the repo, sha); the simulator
+    plants one row carrying every sha of that deploy. The full score, not just f_deploy,
+    must come out the same either way — f_deploy also lifts the 0.3x relevance gate, so a
+    discrepancy here would move rankings, not just a feature value.
+    """
+    settings = get_settings()
+    commits = load_fixture_commits(settings, "bad_deploy", ALERT_TIME)
+    shas = load_scenario("bad_deploy")["deploys"][0]["commit_shas"]
+    finished = ALERT_TIME - timedelta(minutes=20)
+
+    planted = [{"service": "checkout", "commit_shas": shas, "finished_at": finished}]
+    fanned = [
+        {"service": name, "commit_shas": [sha], "finished_at": finished}
+        for sha in shas
+        for name in catalog.services_for_repo("github.com/eriklarson12/vigil-demo-shop")
+    ]
+    assert len(fanned) == 10  # 2 shas x 5 services sharing the demo repo
+
+    def scored(deploys):
+        return score_commits(
+            commits, service="checkout", path_globs=CHECKOUT_GLOBS, shared_globs=SHARED_GLOBS,
+            deploys=deploys, starts_at=ALERT_TIME,
+        )
+
+    assert scored(fanned) == scored(planted)
+    assert scored(fanned)[0]["feature_scores"]["f_deploy"] == 1.0  # not vacuous

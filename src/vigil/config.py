@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     github_mode: str = "fixture"  # live | fixture
     github_token: str = ""
     github_fixtures_dir: str = "tests/fixtures/github"
+    github_deploy_environment: str = "production"  # "" = every environment
     llm_fixtures_dir: str = "tests/fixtures/llm"
 
     slack_mode: str = "mock"  # mock | webhook

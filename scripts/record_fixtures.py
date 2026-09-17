@@ -7,6 +7,8 @@ propagates that rename everywhere it has to land, which is wider than it looks:
 - `tests/fixtures/llm/*.json`     — recorded LLM responses name commits in `verdicts[].sha`,
                                     `likely_culprit_sha`, and in prose.
 - `simulator/scenarios/*.json`    — `deploys[].commit_shas`, which drive `f_deploy`.
+- the github fixtures' `deployments` array (roadmap R6), derived from those same
+  `deploys[]` below so the two replay paths cannot drift apart.
 
 Getting this wrong fails *silently*. `rank_commits_llm` drops verdicts whose sha is not among
 the scored candidates (the spec §6.3 anti-hallucination guard), so a half-applied rename
@@ -218,6 +220,22 @@ def record(manifest: dict, fetch, dry_run: bool) -> int:
         p.stem: _substitute(json.loads(p.read_text(encoding="utf-8")), full)
         for p in sorted(SCENARIOS_DIR.glob("*.json"))
     }
+
+    # R6: the fixture's `deployments` is the flattening of that scenario's `deploys[]`
+    # (one entry per sha, service dropped — the graph node recovers it from the catalog).
+    # Deriving it here rather than carrying the old value through is what keeps a
+    # re-record from silently dropping the key and zeroing f_deploy in fixture mode.
+    for scenario, fixture in fixtures.items():
+        entries = [
+            {"sha": sha, "minutes_before_alert": d["minutes_before_alert"]}
+            for d in scenarios[scenario].get("deploys", [])
+            for sha in d["commit_shas"]
+        ]
+        fixtures[scenario] = {
+            "culprit": fixture["culprit"],
+            **({"deployments": entries} if entries else {}),
+            "commits": fixture["commits"],
+        }
     llm = {
         p.name: _substitute(json.loads(p.read_text(encoding="utf-8")), full)
         for p in sorted(LLM_DIR.glob("*.json"))

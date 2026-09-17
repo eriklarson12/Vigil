@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-224%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-287%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -186,6 +186,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `EMBEDDINGS_MODE` | | `auto` (default), `gemini`, or `fake` (deterministic hash vectors) |
 | `GITHUB_MODE` | | `fixture` (default, offline) or `live` |
 | `GITHUB_TOKEN` | | Fine-grained read-only PAT, only for `GITHUB_MODE=live` |
+| `GITHUB_DEPLOY_ENVIRONMENT` | | Deployments filtered to this environment (default `production`, empty for all) |
 | `SLACK_MODE` | | `mock` (default, console plus dashboard) or `webhook` |
 | `SLACK_WEBHOOK_URL` | | Incoming webhook, required when `SLACK_MODE=webhook` |
 | `SLACK_BOT_TOKEN` | | Enables `chat.postMessage` and threaded postmortems |
@@ -209,9 +210,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 133 unit tests, plus suites that need the database container
+# Backend: 195 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 25 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 26 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 

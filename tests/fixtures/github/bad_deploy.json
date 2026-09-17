@@ -1,5 +1,15 @@
 {
   "culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+  "deployments": [
+    {
+      "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+      "minutes_before_alert": 20
+    },
+    {
+      "sha": "520191a2fa06d48da80b227c9b8767681437b698",
+      "minutes_before_alert": 20
+    }
+  ],
   "commits": [
     {
       "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
