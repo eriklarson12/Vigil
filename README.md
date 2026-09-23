@@ -5,12 +5,12 @@
 **An autonomous incident responder: production alert to Slack brief in under a minute.**
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
-[![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://vigil-silk-nine.vercel.app)
+[![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
 [![Tests](https://img.shields.io/badge/tests-287%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
-[**Live dashboard →**](https://vigil-silk-nine.vercel.app) · [API health](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz)
+[**Live dashboard →**](https://tryvigil.vercel.app) · [API health](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz)
 
 </div>
 
@@ -267,7 +267,7 @@ Reproduce with `docker compose up -d db && uv run pytest -m retrieval_live -s`, 
 
 ## Deployment
 
-Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz), with the dashboard on Vercel at [vigil-silk-nine.vercel.app](https://vigil-silk-nine.vercel.app).
+Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0dfde.eastus.azurecontainerapps.io/healthz), with the dashboard on Vercel at [tryvigil.vercel.app](https://tryvigil.vercel.app).
 
 - **API → Azure Container Apps**, scale-to-zero with a maximum of one replica. GitHub Actions builds the image, pushes to ACR, and rolls it out; authentication is OIDC through a federated credential, so no long-lived Azure secrets are stored in the repo.
 - **Database → Neon**, free tier with pgvector. Migrations apply on app startup.
