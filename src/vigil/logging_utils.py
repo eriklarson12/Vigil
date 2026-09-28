@@ -33,6 +33,7 @@ SECRET_FIELDS = (
     "alertmanager_webhook_token",
     "resume_token",
     "github_token",
+    "github_write_token",
 )
 
 

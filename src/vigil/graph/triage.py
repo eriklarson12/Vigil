@@ -269,14 +269,16 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
                     """
                     INSERT INTO commit_candidates
                         (incident_id, sha, message, author, committed_at, files,
-                        heuristic_score, feature_scores, llm_rank, llm_confidence, llm_rationale)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        heuristic_score, feature_scores, llm_rank, llm_confidence, llm_rationale,
+                        llm_suggested_action)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (incident_id, sha) DO UPDATE SET
                         heuristic_score = EXCLUDED.heuristic_score,
                         feature_scores = EXCLUDED.feature_scores,
                         llm_rank = EXCLUDED.llm_rank,
                         llm_confidence = EXCLUDED.llm_confidence,
-                        llm_rationale = EXCLUDED.llm_rationale
+                        llm_rationale = EXCLUDED.llm_rationale,
+                        llm_suggested_action = EXCLUDED.llm_suggested_action
                     """,
                     (
                         incident_id,
@@ -290,6 +292,7 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
                         verdict["rank"] if verdict else None,
                         verdict["confidence"] if verdict else None,
                         verdict["rationale"] if verdict else None,
+                        verdict["suggested_action"] if verdict else None,
                     ),
                 )
         return {}

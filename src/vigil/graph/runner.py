@@ -14,6 +14,7 @@ import structlog
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
+from vigil.commits.rollback import propose_revert
 from vigil.graph.deps import Deps
 from vigil.graph.postmortem import build_postmortem_graph
 from vigil.graph.triage import build_triage_graph
@@ -105,6 +106,12 @@ class Runner:
 
     def kick_postmortem(self, incident_id: str) -> None:
         task = asyncio.create_task(self.run_postmortem(incident_id))
+        self._bg.add(task)
+        task.add_done_callback(self._bg.discard)
+
+    def kick_revert(self, incident_id: str, response_url: str | None) -> None:
+        # Slack wants its ack within 3 s; live mode's GitHub calls can outlast that.
+        task = asyncio.create_task(propose_revert(self._deps, incident_id, response_url))
         self._bg.add(task)
         task.add_done_callback(self._bg.discard)
 

@@ -45,6 +45,8 @@ export RESUME_TOKEN="dev-token"
 export SERVICES_FILE="$ROOT/services.yaml"
 export GITHUB_FIXTURES_DIR="$ROOT/tests/fixtures/github"
 export LLM_FIXTURES_DIR="$ROOT/tests/fixtures/llm"
+export ROLLBACK_MODE="mock"
+export GITHUB_WRITE_TOKEN=""
 
 # --- opt-in live dependencies ---
 if [[ $LLM_LIVE -eq 1 ]]; then export LLM_MODE="gemini"; else export LLM_MODE="fake"; fi
@@ -58,7 +60,7 @@ if ! (exec 3<>/dev/tcp/localhost/5433) 2>/dev/null; then
 fi
 
 {
-  echo "safe-run: db=localhost:5433  slack=mock  llm=$LLM_MODE  embeddings=$EMBEDDINGS_MODE  github=$GITHUB_MODE"
+  echo "safe-run: db=localhost:5433  slack=mock  llm=$LLM_MODE  embeddings=$EMBEDDINGS_MODE  github=$GITHUB_MODE  rollback=mock"
   [[ $LLM_LIVE -eq 1 || $EMB_LIVE -eq 1 ]] && echo "safe-run: SPENDING REAL GEMINI QUOTA (llm_live=$LLM_LIVE embeddings_live=$EMB_LIVE)"
   [[ $GH_LIVE -eq 1 ]] && echo "safe-run: calling the real GitHub API"
 } >&2

@@ -15,6 +15,28 @@ SEV_STYLE = {
 }
 
 
+REVERT_CONFIDENCE_GATE = 0.65
+# ADR-012: rollback_deploy counts too. Both actions mean "undo this commit", and
+# the flagship bad_deploy verdict is rollback_deploy.
+REVERT_ACTIONS = frozenset({"revert", "rollback_deploy"})
+
+
+def revert_gate(confidence: float | None, suggested_action: str | None) -> bool:
+    """Whether a culprit verdict earns the "Propose revert PR" button (roadmap R5)."""
+    return (
+        confidence is not None
+        and float(confidence) >= REVERT_CONFIDENCE_GATE
+        and suggested_action in REVERT_ACTIONS
+    )
+
+
+def _culprit_verdict(commit_analysis: dict[str, Any] | None) -> dict[str, Any] | None:
+    sha = (commit_analysis or {}).get("likely_culprit_sha")
+    if not sha:
+        return None
+    return next((v for v in commit_analysis["verdicts"] if v["sha"] == sha), None)
+
+
 def confidence_bar(confidence: float) -> str:
     filled = round(confidence * 5)
     return "▓" * filled + "░" * (5 - filled) + f" {round(confidence * 100)}%"
@@ -143,30 +165,57 @@ def build_brief(
             ],
         }
     )
-    blocks.append(
+    actions: list[dict[str, Any]] = [
         {
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "style": "primary",
-                    "text": {"type": "plain_text", "text": "Mark resolved"},
-                    "action_id": "resolve_incident",
-                    "value": str(incident["id"]),
+            "type": "button",
+            "style": "primary",
+            "text": {"type": "plain_text", "text": "Mark resolved"},
+            "action_id": "resolve_incident",
+            "value": str(incident["id"]),
+        }
+    ]
+    culprit = _culprit_verdict(commit_analysis)
+    if culprit and revert_gate(culprit["confidence"], culprit["suggested_action"]):
+        actions.append(
+            {
+                "type": "button",
+                "style": "danger",
+                "text": {"type": "plain_text", "text": "Propose revert PR"},
+                "action_id": "propose_revert",
+                "value": str(incident["id"]),
+                "confirm": {
+                    "title": {"type": "plain_text", "text": "Propose a revert PR?"},
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"Vigil opens a PR reverting `{culprit['sha'][:10]}`. It never merges.",
+                    },
+                    "confirm": {"type": "plain_text", "text": "Propose"},
+                    "deny": {"type": "plain_text", "text": "Cancel"},
                 },
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Dashboard"},
-                    "url": f"{dashboard_url}/incidents/{incident['id']}",
-                },
-            ],
+            }
+        )
+    actions.append(
+        {
+            "type": "button",
+            "text": {"type": "plain_text", "text": "Dashboard"},
+            "url": f"{dashboard_url}/incidents/{incident['id']}",
         }
     )
+    blocks.append({"type": "actions", "elements": actions})
 
     return {
         "text": f"{emoji} {severity} · {service} · {alertname}",
         "attachments": [{"color": color, "blocks": blocks}],
     }
+
+
+def build_revert_result_message(sha: str, pr_url: str | None, error: str | None) -> dict[str, Any]:
+    """Follow-up to the button click, posted to the interaction's response_url."""
+    if pr_url:
+        text = f":leftwards_arrow_with_hook: Revert PR for `{sha[:10]}` proposed: {pr_url}"
+    else:
+        text = f":warning: Could not propose a revert PR for `{sha[:10]}`: {error}"
+    return {"response_type": "in_channel", "replace_original": False, "text": text}
 
 
 def build_postmortem_message(markdown: str, incident_id: str) -> dict[str, Any]:
