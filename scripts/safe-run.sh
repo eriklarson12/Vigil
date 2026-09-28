@@ -8,6 +8,7 @@
 # Usage:
 #   safe-run.sh uv run vigil-sim demo --scenario bad_deploy
 #   safe-run.sh --llm-live uv run vigil-sim demo --scenario bad_deploy
+#   safe-run.sh --rollback-live uv run vigil-serve   # revert PRs use GITHUB_WRITE_TOKEN
 #   safe-run.sh --check uv run vigil-serve      # print the env, run nothing
 #
 # Flags opt into ONE live dependency at a time. There is deliberately no flag
@@ -15,13 +16,14 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-LLM_LIVE=0 EMB_LIVE=0 GH_LIVE=0 DRY=0
+LLM_LIVE=0 EMB_LIVE=0 GH_LIVE=0 RB_LIVE=0 DRY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --llm-live)        LLM_LIVE=1; shift ;;
     --embeddings-live) EMB_LIVE=1; shift ;;
     --github-live)     GH_LIVE=1; shift ;;
+    --rollback-live)   RB_LIVE=1; shift ;;
     --check)           DRY=1; shift ;;
     --)                shift; break ;;
     -*)                echo "safe-run: unknown flag $1" >&2; exit 2 ;;
@@ -30,7 +32,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $# -eq 0 && $DRY -eq 0 ]]; then
-  sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 fi
 
@@ -45,13 +47,12 @@ export RESUME_TOKEN="dev-token"
 export SERVICES_FILE="$ROOT/services.yaml"
 export GITHUB_FIXTURES_DIR="$ROOT/tests/fixtures/github"
 export LLM_FIXTURES_DIR="$ROOT/tests/fixtures/llm"
-export ROLLBACK_MODE="mock"
-export GITHUB_WRITE_TOKEN=""
 
 # --- opt-in live dependencies ---
 if [[ $LLM_LIVE -eq 1 ]]; then export LLM_MODE="gemini"; else export LLM_MODE="fake"; fi
 if [[ $EMB_LIVE -eq 1 ]]; then export EMBEDDINGS_MODE="gemini"; else export EMBEDDINGS_MODE="fake"; fi
 if [[ $GH_LIVE -eq 1 ]]; then export GITHUB_MODE="live"; else export GITHUB_MODE="fixture"; export GITHUB_TOKEN=""; fi
+if [[ $RB_LIVE -eq 1 ]]; then export ROLLBACK_MODE="live"; else export ROLLBACK_MODE="mock"; export GITHUB_WRITE_TOKEN=""; fi
 if [[ $LLM_LIVE -eq 0 && $EMB_LIVE -eq 0 ]]; then export GEMINI_API_KEY=""; fi
 
 # --- warn if the local database is not up ---
@@ -60,9 +61,10 @@ if ! (exec 3<>/dev/tcp/localhost/5433) 2>/dev/null; then
 fi
 
 {
-  echo "safe-run: db=localhost:5433  slack=mock  llm=$LLM_MODE  embeddings=$EMBEDDINGS_MODE  github=$GITHUB_MODE  rollback=mock"
+  echo "safe-run: db=localhost:5433  slack=mock  llm=$LLM_MODE  embeddings=$EMBEDDINGS_MODE  github=$GITHUB_MODE  rollback=$ROLLBACK_MODE"
   [[ $LLM_LIVE -eq 1 || $EMB_LIVE -eq 1 ]] && echo "safe-run: SPENDING REAL GEMINI QUOTA (llm_live=$LLM_LIVE embeddings_live=$EMB_LIVE)"
   [[ $GH_LIVE -eq 1 ]] && echo "safe-run: calling the real GitHub API"
+  [[ $RB_LIVE -eq 1 ]] && echo "safe-run: revert clicks OPEN REAL PULL REQUESTS"
 } >&2
 
 if [[ $DRY -eq 1 ]]; then

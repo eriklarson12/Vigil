@@ -158,3 +158,50 @@ async def test_click_with_bad_signature_is_rejected(client):
     c, deps = client
     resp = await _click(c, "0b6f2a4e-0000-4000-8000-000000000001", secret="wrong")
     assert resp.status_code == 401
+
+
+async def test_resume_tick_finishes_a_stranded_request(client):
+    c, deps = client
+    incident_id = await _fire(c, deps, "bad_deploy")
+    # A click whose background task died with the container: claimed, never finished.
+    async with deps.pool.connection() as conn:
+        await conn.execute(
+            "UPDATE incidents SET revert_pr_state = 'requested' WHERE id = %s", (incident_id,)
+        )
+        await conn.execute(
+            "INSERT INTO incident_events (incident_id, event_type, payload, created_at)"
+            " VALUES (%s, 'revert_pr_requested', '{}', now() - interval '1 hour')",
+            (incident_id,),
+        )
+
+    resp = await c.post("/internal/resume", headers=TOKEN)
+    assert resp.status_code == 200
+    assert resp.json()["reverts_resumed"] == 1
+    state, url = await _state(deps, incident_id)
+    assert state == "proposed" and url.startswith("mock://")
+
+    again = await c.post("/internal/resume", headers=TOKEN)
+    assert again.json()["reverts_resumed"] == 0
+
+
+async def test_live_mode_without_write_token_fails_cleanly(client):
+    c, deps = client
+    incident_id = await _fire(c, deps, "bad_deploy")
+    deps.settings.rollback_mode = "live"
+    try:
+        await _click(c, incident_id)
+
+        async def settled():
+            state = await _state(deps, incident_id)
+            return state if state[0] in ("proposed", "failed") else None
+
+        state, url = await _wait(settled)
+    finally:
+        deps.settings.rollback_mode = "mock"
+    assert (state, url) == ("failed", None)
+    failed = next(p for t, p in await _events(deps, incident_id) if t == "revert_pr_failed")
+    assert failed["error"] == "GITHUB_WRITE_TOKEN is not set"
+
+    # failed is retryable: the next click claims again
+    retry = await _click(c, incident_id)
+    assert retry.json()["text"] == "Proposing a revert PR."

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-287%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-318%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -33,6 +33,7 @@ The first ten minutes of an incident go to gathering context: what changed, who 
 - **Three LLM calls per incident, maximum.** Deterministic scoring ranks every commit on six features (recency, path match, risky files, diff size, message signals, deploy correlation) before the model sees anything, and re-ranking is folded into the brief call. What remains is ranking, brief, and postmortem, which keeps an alert storm inside a free tier.
 - **The model never decides anything consequential.** SEV1 through SEV4 come from a rules table over the service catalog (tier, user-facing, dependency fan-out) plus a BFS blast radius. A commit matching no path and no deploy window is scaled by 0.3, and nothing below the score floor is offered as a culprit: `cert_expiry` proves the pipeline reports "no likely culprit identified" instead.
 - **The brief always posts.** Every node degrades on its own: no commits, empty retrieval, model down, budget exhausted. If all three LLM calls fail, a deterministic Block Kit brief ships from the heuristics alone, carrying severity, the culprit and its confidence, a runbook excerpt, and a "Mark resolved" button. A brief with gaps beats silence at 3am.
+- **The fix is one click away, and a human makes it.** When the culprit clears 0.65 confidence and the verdict says to undo it, the brief adds a "Propose revert PR" button. The click is the approval. Vigil builds the revert on top of the current default branch through GitHub's Git Data API, refuses merge commits and any file changed since the culprit, and opens a PR it never merges. It writes with a separate token, so the read-only one never gains write access, and a retried click resumes its own branch instead of opening a second PR.
 - **The postmortem writes itself.** Resolving an incident, in Slack or over the API, starts a second graph that reads the timeline the pipeline already recorded and posts a blameless write-up in the brief's own thread.
 - **Hybrid retrieval, because runbooks are full of identifiers.** Runbook text is dense with exact strings such as service names, error codes, and table names, where lexical search beats embeddings. Vector and full-text results are fused with RRF and boosted when the runbook is tagged for the failing service.
 - **Postgres is the queue.** `FOR UPDATE SKIP LOCKED` with a stale-claim reclaim after 10 minutes handles dozens of alerts a day without Kafka, Celery, or Redis. The same database holds vectors, checkpoints, and the LLM budget, so the entire system is one managed dependency.
@@ -187,11 +188,14 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `GITHUB_MODE` | | `fixture` (default, offline) or `live` |
 | `GITHUB_TOKEN` | | Fine-grained read-only PAT, only for `GITHUB_MODE=live` |
 | `GITHUB_DEPLOY_ENVIRONMENT` | | Deployments filtered to this environment (default `production`, empty for all) |
+| `ROLLBACK_MODE` | | `mock` (default, records the would-be revert PR) or `live` |
+| `GITHUB_WRITE_TOKEN` | | Fine-grained PAT with Contents and Pull requests read-write, only for `ROLLBACK_MODE=live` |
+| `DEMO_REPO_DEFAULT_BRANCH` | | Branch revert PRs are built on and target (default `main`) |
 | `SLACK_MODE` | | `mock` (default, console plus dashboard) or `webhook` |
 | `SLACK_WEBHOOK_URL` | | Incoming webhook, required when `SLACK_MODE=webhook` |
 | `SLACK_BOT_TOKEN` | | Enables `chat.postMessage` and threaded postmortems |
 | `SLACK_CHANNEL` | | Target channel for the bot token (default `#incidents`) |
-| `SLACK_SIGNING_SECRET` | | Verifies the "Mark resolved" button's requests |
+| `SLACK_SIGNING_SECRET` | | Verifies the brief's button requests |
 | `DASHBOARD_URL` | | CORS allowlist entry and the target of the brief's Dashboard button |
 | `SERVICES_FILE` | | Service catalog path (default `services.yaml`) |
 | `COMMIT_LOOKBACK_HOURS` | | Commit window scored per incident (default `48`) |
@@ -210,9 +214,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 195 unit tests, plus suites that need the database container
+# Backend: 221 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 26 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 31 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -241,13 +245,13 @@ Several suites exist for failures this system could otherwise hide:
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/webhooks/alertmanager` | Alertmanager v4 payload: validate, fingerprint, group, enqueue (bearer token) |
-| `POST` | `/slack/interactions` | Slack "Mark resolved" button, signature-verified |
+| `POST` | `/slack/interactions` | Slack "Mark resolved" and "Propose revert PR" buttons, signature-verified |
 | `GET` | `/api/incidents` | Incident list for the dashboard |
 | `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
 | `GET` | `/api/stats` | MTTA, MTTR, triage quality, and model spend, computed on read |
 | `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
 | `DELETE` | `/api/incidents/{id}` | Hard-delete one incident with its alerts, timeline, candidates, postmortem, and graph checkpoints (bearer token) |
-| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, prune (bearer token) |
+| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, finish stranded revert PRs, prune (bearer token) |
 | `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 
 </details>
