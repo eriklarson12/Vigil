@@ -26,8 +26,10 @@ class Settings(BaseSettings):
     llm_fixtures_dir: str = "tests/fixtures/llm"
 
     rollback_mode: str = "mock"  # mock | live
-    github_write_token: str = ""  # separate from github_token: Contents + PRs read-write
+    github_write_token: str = ""  # separate from github_token: Contents, PRs, Issues read-write
     demo_repo_default_branch: str = "main"
+    issues_mode: str = "mock"  # mock | live
+    issues_repo: str = ""  # "" = the incident service's repo from services.yaml
 
     slack_mode: str = "mock"  # mock | webhook
     slack_webhook_url: str = ""

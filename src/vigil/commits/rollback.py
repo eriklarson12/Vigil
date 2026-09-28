@@ -18,7 +18,7 @@ import structlog
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
-from vigil.config import Settings
+from vigil.commits.github_write import get_json, post_json, write_client
 from vigil.graph.deps import Deps
 from vigil.impact.catalog import ServiceCatalog
 from vigil.ingest.queue import add_event
@@ -96,33 +96,10 @@ def build_pr_payload(ctx: dict[str, Any], repo: str, dashboard_url: str) -> dict
     }
 
 
-def _write_client(settings: Settings) -> httpx.AsyncClient:
-    return httpx.AsyncClient(
-        base_url="https://api.github.com",
-        headers={
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {settings.github_write_token}",
-        },
-        timeout=10.0,
-    )
-
-
-async def _get(gh: httpx.AsyncClient, path: str, **params: Any) -> Any:
-    resp = await gh.get(path, params=params or None)
-    resp.raise_for_status()
-    return resp.json()
-
-
-async def _post(gh: httpx.AsyncClient, path: str, body: dict[str, Any]) -> Any:
-    resp = await gh.post(path, json=body)
-    resp.raise_for_status()
-    return resp.json()
-
-
 async def _tree_at(gh: httpx.AsyncClient, base: str, commit_sha: str) -> tuple[str, dict[str, dict]]:
     """(tree sha, {path: entry}) for every blob at `commit_sha`."""
-    tree_sha = (await _get(gh, f"{base}/git/commits/{commit_sha}"))["tree"]["sha"]
-    tree = await _get(gh, f"{base}/git/trees/{tree_sha}", recursive="1")
+    tree_sha = (await get_json(gh, f"{base}/git/commits/{commit_sha}"))["tree"]["sha"]
+    tree = await get_json(gh, f"{base}/git/trees/{tree_sha}", recursive="1")
     if tree.get("truncated"):
         raise RevertRefused("repository tree too large to diff through the API")
     return tree_sha, {e["path"]: e for e in tree["tree"] if e["type"] == "blob"}
@@ -177,20 +154,20 @@ async def open_live_pr(
     if existing.status_code == 200:
         # A previous run got as far as the branch. Resume: never build a second one.
         owner = owner_repo.split("/")[0]
-        pulls = await _get(gh, f"{base}/pulls", head=f"{owner}:{branch}", state="open")
+        pulls = await get_json(gh, f"{base}/pulls", head=f"{owner}:{branch}", state="open")
         if pulls:
             return pulls[0]["html_url"]
     elif existing.status_code == 404:
-        culprit = await _get(gh, f"{base}/commits/{sha}")
+        culprit = await get_json(gh, f"{base}/commits/{sha}")
         if len(culprit["parents"]) != 1:
             raise RevertRefused("culprit is a merge commit; revert it by hand")
-        head_sha = (await _get(gh, f"{base}/git/ref/heads/{default_branch}"))["object"]["sha"]
+        head_sha = (await get_json(gh, f"{base}/git/ref/heads/{default_branch}"))["object"]["sha"]
         head_tree_sha, head_tree = await _tree_at(gh, base, head_sha)
         _, parent_tree = await _tree_at(gh, base, culprit["parents"][0]["sha"])
         entries = revert_entries(culprit["files"], head_tree, parent_tree)
 
-        tree = await _post(gh, f"{base}/git/trees", {"base_tree": head_tree_sha, "tree": entries})
-        commit = await _post(
+        tree = await post_json(gh, f"{base}/git/trees", {"base_tree": head_tree_sha, "tree": entries})
+        commit = await post_json(
             gh,
             f"{base}/git/commits",
             {
@@ -199,11 +176,11 @@ async def open_live_pr(
                 "parents": [head_sha],
             },
         )
-        await _post(gh, f"{base}/git/refs", {"ref": f"refs/heads/{branch}", "sha": commit["sha"]})
+        await post_json(gh, f"{base}/git/refs", {"ref": f"refs/heads/{branch}", "sha": commit["sha"]})
     else:
         existing.raise_for_status()
 
-    opened = await _post(
+    opened = await post_json(
         gh,
         f"{base}/pulls",
         {"title": pr["title"], "head": branch, "base": default_branch, "body": pr["body"]},
@@ -217,7 +194,7 @@ async def _open_pr(deps: Deps, ctx: dict[str, Any], pr: dict[str, Any]) -> str:
         return f"mock://{pr['repo']}/tree/{pr['branch']}"
     if not settings.github_write_token:
         raise RevertRefused("GITHUB_WRITE_TOKEN is not set")
-    async with _write_client(settings) as gh:
+    async with write_client(settings) as gh:
         return await open_live_pr(
             gh,
             owner_repo=ServiceCatalog.normalize_repo(pr["repo"]),

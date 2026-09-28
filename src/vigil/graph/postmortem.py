@@ -5,6 +5,7 @@ gather_timeline is pure Postgres reads; one LLM call total. On LLM failure no
 row is written — the incident stays 'resolved' and the resume tick retries.
 """
 
+import json
 from typing import Any
 
 import structlog
@@ -159,10 +160,12 @@ def build_postmortem_graph(deps: Deps, checkpointer: Any = None):
             return {}
         async with deps.pool.connection() as conn:
             async with conn.transaction():
+                action_items = (state.get("postmortem") or {}).get("action_items") or []
                 cur = await conn.execute(
-                    "INSERT INTO postmortems (incident_id, markdown, model_used) VALUES (%s, %s, %s)"
+                    "INSERT INTO postmortems (incident_id, markdown, model_used, action_items)"
+                    " VALUES (%s, %s, %s, %s)"
                     " ON CONFLICT (incident_id) DO NOTHING RETURNING id",
-                    (incident_id, markdown, deps.settings.gemini_model),
+                    (incident_id, markdown, deps.settings.gemini_model, json.dumps(action_items)),
                 )
                 inserted = await cur.fetchone()
 
