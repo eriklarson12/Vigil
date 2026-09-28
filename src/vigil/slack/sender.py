@@ -59,6 +59,20 @@ class SlackSender:
             await self._post_webhook(payload)  # no threading without a bot token
         await add_event(self._pool, incident_id, "postmortem_posted", {"slack_payload": payload})
 
+    async def post_response(
+        self, incident_id: str, response_url: str | None, payload: dict[str, Any]
+    ) -> None:
+        """Answer a button click through its response_url.
+
+        Works for webhook-posted briefs too, so it needs no bot token. A missing url
+        (a resume-tick run, long after Slack's 30-minute window) records the event only.
+        """
+        if self._settings.slack_mode != "mock" and response_url:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(response_url, json=payload)
+                resp.raise_for_status()
+        await add_event(self._pool, incident_id, "slack_response_posted", {"slack_payload": payload})
+
     async def _post_webhook(self, payload: dict[str, Any]) -> None:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(self._settings.slack_webhook_url, json=payload)

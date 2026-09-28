@@ -14,6 +14,7 @@ import structlog
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
+from vigil.commits.rollback import propose_revert
 from vigil.graph.deps import Deps
 from vigil.graph.postmortem import build_postmortem_graph
 from vigil.graph.triage import build_triage_graph
@@ -108,6 +109,12 @@ class Runner:
         self._bg.add(task)
         task.add_done_callback(self._bg.discard)
 
+    def kick_revert(self, incident_id: str, response_url: str | None) -> None:
+        # Slack wants its ack within 3 s; live mode's GitHub calls can outlast that.
+        task = asyncio.create_task(propose_revert(self._deps, incident_id, response_url))
+        self._bg.add(task)
+        task.add_done_callback(self._bg.discard)
+
     # -- work ------------------------------------------------------------------
 
     async def _drain(self) -> None:
@@ -191,8 +198,36 @@ class Runner:
         for incident_id in pending_pm:
             await self.run_postmortem(incident_id)
 
+        reverts = await self._resume_reverts()
         pruned = await self.prune()
-        return {"alerts_drained": drained, "postmortems_run": len(pending_pm), "rows_pruned": pruned}
+        return {
+            "alerts_drained": drained,
+            "postmortems_run": len(pending_pm),
+            "reverts_resumed": reverts,
+            "rows_pruned": pruned,
+        }
+
+    async def _resume_reverts(self) -> int:
+        """Finish revert PRs stranded in `requested` by a killed container.
+
+        The stale window keeps this from racing a click still running in-process. Slack's
+        response_url is long expired by now, so the outcome lands as events only.
+        """
+        async with self._deps.pool.connection() as conn:
+            cur = await conn.execute(
+                """
+                SELECT i.id FROM incidents i
+                WHERE i.revert_pr_state = 'requested'
+                  AND (SELECT max(e.created_at) FROM incident_events e
+                       WHERE e.incident_id = i.id AND e.event_type = 'revert_pr_requested')
+                      < now() - make_interval(mins => %s)
+                """,
+                (self._deps.settings.stale_claim_minutes,),
+            )
+            stranded = [str(r[0]) for r in await cur.fetchall()]
+        for incident_id in stranded:
+            await propose_revert(self._deps, incident_id, None)
+        return len(stranded)
 
     async def prune(self) -> int:
         total = 0
