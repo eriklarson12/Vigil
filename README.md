@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-318%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-331%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -35,6 +35,7 @@ The first ten minutes of an incident go to gathering context: what changed, who 
 - **The brief always posts.** Every node degrades on its own: no commits, empty retrieval, model down, budget exhausted. If all three LLM calls fail, a deterministic Block Kit brief ships from the heuristics alone, carrying severity, the culprit and its confidence, a runbook excerpt, and a "Mark resolved" button. A brief with gaps beats silence at 3am.
 - **The fix is one click away, and a human makes it.** When the culprit clears 0.65 confidence and the verdict says to undo it, the brief adds a "Propose revert PR" button. The click is the approval. Vigil builds the revert on top of the current default branch through GitHub's Git Data API, refuses merge commits and any file changed since the culprit, and opens a PR it never merges. It writes with a separate token, so the read-only one never gains write access, and a retried click resumes its own branch instead of opening a second PR.
 - **The postmortem writes itself.** Resolving an incident, in Slack or over the API, starts a second graph that reads the timeline the pipeline already recorded and posts a blameless write-up in the brief's own thread.
+- **Action items become issues, exactly once.** Each postmortem action item is filed as a labeled GitHub issue. Filing runs after the postmortem graph, so the resume tick can finish a run a killed container left behind. Each URL is stored the moment it exists, and a hidden marker in every issue body lets a retry adopt an issue whose URL never reached Postgres instead of filing it twice.
 - **Hybrid retrieval, because runbooks are full of identifiers.** Runbook text is dense with exact strings such as service names, error codes, and table names, where lexical search beats embeddings. Vector and full-text results are fused with RRF and boosted when the runbook is tagged for the failing service.
 - **Postgres is the queue.** `FOR UPDATE SKIP LOCKED` with a stale-claim reclaim after 10 minutes handles dozens of alerts a day without Kafka, Celery, or Redis. The same database holds vectors, checkpoints, and the LLM budget, so the entire system is one managed dependency.
 - **Scale-to-zero survives mid-incident death.** A GitHub Actions cron POSTs `/internal/resume` every 15 minutes; the request itself wakes the container, and the tick reclaims stranded triage runs, resumes checkpointed graphs, generates missing postmortems, and prunes old rows to stay inside the 0.5 GB free tier.
@@ -189,8 +190,10 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `GITHUB_TOKEN` | | Fine-grained read-only PAT, only for `GITHUB_MODE=live` |
 | `GITHUB_DEPLOY_ENVIRONMENT` | | Deployments filtered to this environment (default `production`, empty for all) |
 | `ROLLBACK_MODE` | | `mock` (default, records the would-be revert PR) or `live` |
-| `GITHUB_WRITE_TOKEN` | | Fine-grained PAT with Contents and Pull requests read-write, only for `ROLLBACK_MODE=live` |
+| `GITHUB_WRITE_TOKEN` | | Fine-grained PAT with Contents, Pull requests and Issues read-write, only for `ROLLBACK_MODE=live` or `ISSUES_MODE=live` |
 | `DEMO_REPO_DEFAULT_BRANCH` | | Branch revert PRs are built on and target (default `main`) |
+| `ISSUES_MODE` | | `mock` (default, records the would-be issues) or `live` |
+| `ISSUES_REPO` | | Repo action-item issues are filed in; blank means the incident service's repo from `services.yaml` |
 | `SLACK_MODE` | | `mock` (default, console plus dashboard) or `webhook` |
 | `SLACK_WEBHOOK_URL` | | Incoming webhook, required when `SLACK_MODE=webhook` |
 | `SLACK_BOT_TOKEN` | | Enables `chat.postMessage` and threaded postmortems |
@@ -214,9 +217,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 221 unit tests, plus suites that need the database container
+# Backend: 231 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 31 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 34 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -251,7 +254,7 @@ Several suites exist for failures this system could otherwise hide:
 | `GET` | `/api/stats` | MTTA, MTTR, triage quality, and model spend, computed on read |
 | `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
 | `DELETE` | `/api/incidents/{id}` | Hard-delete one incident with its alerts, timeline, candidates, postmortem, and graph checkpoints (bearer token) |
-| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, finish stranded revert PRs, prune (bearer token) |
+| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, finish stranded revert PRs and action-item issues, prune (bearer token) |
 | `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 
 </details>

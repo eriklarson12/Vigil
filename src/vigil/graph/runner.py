@@ -15,6 +15,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from vigil.commits.rollback import propose_revert
+from vigil.graph.action_items import MAX_ATTEMPTS, PENDING_SQL, file_action_items
 from vigil.graph.deps import Deps
 from vigil.graph.postmortem import build_postmortem_graph
 from vigil.graph.triage import build_triage_graph
@@ -158,17 +159,23 @@ class Runner:
                 "SELECT status FROM incidents WHERE id = %s", (incident_id,)
             )
             row = await cur.fetchone()
-        if row and row[0] == "postmortem_done":
-            return
-        config = {"configurable": {"thread_id": f"pm:{incident_id}"}}
+        if not (row and row[0] == "postmortem_done"):
+            config = {"configurable": {"thread_id": f"pm:{incident_id}"}}
+            try:
+                snapshot = await self._postmortem.aget_state(config)
+                if snapshot and snapshot.next:
+                    await self._postmortem.ainvoke(None, config)
+                else:
+                    await self._postmortem.ainvoke({"incident_id": incident_id, "errors": {}}, config)
+            except Exception as exc:  # noqa: BLE001
+                log.error("postmortem_run_failed", incident_id=incident_id, error=str(exc))
+        await self._file_issues(incident_id)
+
+    async def _file_issues(self, incident_id: str) -> None:
         try:
-            snapshot = await self._postmortem.aget_state(config)
-            if snapshot and snapshot.next:
-                await self._postmortem.ainvoke(None, config)
-            else:
-                await self._postmortem.ainvoke({"incident_id": incident_id, "errors": {}}, config)
-        except Exception as exc:  # noqa: BLE001
-            log.error("postmortem_run_failed", incident_id=incident_id, error=str(exc))
+            await file_action_items(self._deps, incident_id)
+        except Exception as exc:  # noqa: BLE001 — a database error here must not fail the tick
+            log.error("action_items_failed", incident_id=incident_id, error=str(exc))
 
     # -- resume tick (spec §13.4) ----------------------------------------------
 
@@ -199,11 +206,13 @@ class Runner:
             await self.run_postmortem(incident_id)
 
         reverts = await self._resume_reverts()
+        issues = await self._resume_issues()
         pruned = await self.prune()
         return {
             "alerts_drained": drained,
             "postmortems_run": len(pending_pm),
             "reverts_resumed": reverts,
+            "issues_resumed": issues,
             "rows_pruned": pruned,
         }
 
@@ -228,6 +237,18 @@ class Runner:
         for incident_id in stranded:
             await propose_revert(self._deps, incident_id, None)
         return len(stranded)
+
+    async def _resume_issues(self) -> int:
+        """File action items a killed container or a failed run left unfiled."""
+        async with self._deps.pool.connection() as conn:
+            cur = await conn.execute(
+                PENDING_SQL,
+                {"max_attempts": MAX_ATTEMPTS, "stale_minutes": self._deps.settings.stale_claim_minutes},
+            )
+            pending = [str(r[0]) for r in await cur.fetchall()]
+        for incident_id in pending:
+            await self._file_issues(incident_id)
+        return len(pending)
 
     async def prune(self) -> int:
         total = 0
