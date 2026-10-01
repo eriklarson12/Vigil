@@ -5,6 +5,7 @@ missing commit analysis, empty retrieval, absent impact, and a failed
 brief-composition LLM call (brief_text=None -> deterministic wording).
 """
 
+from datetime import datetime
 from typing import Any
 
 SEV_STYLE = {
@@ -228,3 +229,42 @@ def build_postmortem_message(markdown: str, incident_id: str) -> dict[str, Any]:
             _section(text),
         ],
     }
+
+
+STATUS_LIMIT = 10
+SLASH_HELP = (
+    "*Usage*\n"
+    "`/vigil status` lists open incidents (the default).\n"
+    "`/vigil resolve <incident-id>` resolves one and starts its postmortem."
+)
+
+
+def _escape(text: str) -> str:
+    # Slack mrkdwn reserves these three; a raw `>` or `|` in a title breaks the link.
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def age_label(created_at: datetime, now: datetime) -> str:
+    seconds = max(0, int((now - created_at).total_seconds()))
+    for unit, size in (("d", 86400), ("h", 3600), ("m", 60)):
+        if seconds >= size:
+            return f"{seconds // size}{unit}"
+    return f"{seconds}s"
+
+
+def build_status_message(rows: list[dict[str, Any]], dashboard_url: str, now: datetime) -> dict[str, Any]:
+    """`/vigil status` reply. `rows` may hold one past STATUS_LIMIT to signal the cap."""
+    if not rows:
+        return {"response_type": "ephemeral", "text": "No open incidents."}
+    capped = len(rows) > STATUS_LIMIT
+    rows = rows[:STATUS_LIMIT]
+    header = f"*{len(rows)} newest open incidents*" if capped else (
+        f"*{len(rows)} open incident{'s' if len(rows) != 1 else ''}*"
+    )
+    lines = []
+    for r in rows:
+        emoji, _ = SEV_STYLE.get(r["severity"], SEV_STYLE["SEV4"])
+        link = f"<{dashboard_url}/incidents/{r['id']}|{_escape(r['title'])}>"
+        lines.append(f"{emoji} *{r['severity'] or 'SEV?'}* {link} · {age_label(r['created_at'], now)}")
+    text = header + "\n" + "\n".join(lines)
+    return {"response_type": "ephemeral", "text": text, "blocks": [_section(text)]}

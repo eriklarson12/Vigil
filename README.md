@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-331%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-358%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -217,9 +217,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 231 unit tests, plus suites that need the database container
+# Backend: 248 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 34 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 44 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -243,12 +243,13 @@ Several suites exist for failures this system could otherwise hide:
 ## API Reference
 
 <details>
-<summary><b>Nine endpoints</b>: ingest, Slack interactions, dashboard reads, operator actions, cron tick</summary>
+<summary><b>Ten endpoints</b>: ingest, Slack interactions and slash command, dashboard reads, operator actions, cron tick</summary>
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/webhooks/alertmanager` | Alertmanager v4 payload: validate, fingerprint, group, enqueue (bearer token) |
 | `POST` | `/slack/interactions` | Slack "Mark resolved" and "Propose revert PR" buttons, signature-verified |
+| `POST` | `/slack/commands` | `/vigil status` lists open incidents, `/vigil resolve <id>` resolves one; signature-verified, ephemeral replies |
 | `GET` | `/api/incidents` | Incident list for the dashboard |
 | `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
 | `GET` | `/api/stats` | MTTA, MTTR, triage quality, and model spend, computed on read |

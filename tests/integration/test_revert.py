@@ -4,32 +4,20 @@
 """
 
 import asyncio
-import hashlib
-import hmac
 import json
 import pathlib
-import time
 from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 import pytest
 
+from tests.integration.slack_signing import SIGNING_SECRET, sign_slack_request
+
 pytestmark = pytest.mark.integration
 
 ROOT = pathlib.Path(__file__).parent.parent.parent
 TOKEN = {"Authorization": "Bearer dev-token"}
-SIGNING_SECRET = "test-signing-secret"  # pinned in tests/conftest.py
 RESPONSE_URL = "https://hooks.slack.com/actions/T000/1/abc"
-
-
-def sign_slack_request(body: str, secret: str = SIGNING_SECRET, timestamp: int | None = None) -> dict:
-    ts = str(timestamp or int(time.time()))
-    digest = hmac.new(secret.encode(), f"v0:{ts}:{body}".encode(), hashlib.sha256).hexdigest()
-    return {
-        "x-slack-request-timestamp": ts,
-        "x-slack-signature": f"v0={digest}",
-        "content-type": "application/x-www-form-urlencoded",
-    }
 
 
 def _click_body(incident_id: str) -> str:
