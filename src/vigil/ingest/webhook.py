@@ -10,6 +10,7 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg.types.json import Json
+from psycopg_pool import AsyncConnectionPool
 
 from vigil.config import get_settings
 from vigil.ingest.fingerprint import alert_fingerprint, attach_incident
@@ -36,6 +37,54 @@ def _parse_ts(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+async def ingest_alert(pool: AsyncConnectionPool, alert: dict[str, Any], grouping_minutes: int) -> bool:
+    """Persist one firing alert and attach it to an incident. False on a duplicate.
+
+    Shared by the webhook and the anomaly detector (R7), so both feed one pipeline.
+    Raises ValueError when alertname or startsAt is missing.
+    """
+    labels = alert.get("labels", {})
+    alert_name = labels.get("alertname")
+    starts_at = _parse_ts(alert.get("startsAt"))
+    if not alert_name or not starts_at:
+        raise ValueError("alert missing alertname or startsAt")
+    fp = alert_fingerprint(alert)
+
+    async with pool.connection() as conn:  # one tx: insert + group
+        cur = await conn.execute(
+            """
+            INSERT INTO alerts (fingerprint, alert_name, service, status, starts_at,
+                                labels, annotations, raw_payload)
+            VALUES (%s, %s, %s, 'firing', %s, %s, %s, %s)
+            ON CONFLICT (fingerprint, starts_at) DO NOTHING
+            RETURNING id
+            """,
+            (
+                fp,
+                alert_name,
+                labels.get("service"),
+                starts_at,
+                Json(labels),
+                Json(alert.get("annotations", {})),
+                Json(alert),
+            ),
+        )
+        row = await cur.fetchone()
+        if not row:  # Alertmanager re-send within repeat_interval
+            return False
+        incident_id = await attach_incident(
+            conn,
+            fingerprint=fp,
+            service=labels.get("service"),
+            alert_name=alert_name,
+            grouping_minutes=grouping_minutes,
+        )
+        await conn.execute(
+            "UPDATE alerts SET incident_id = %s WHERE id = %s", (incident_id, row[0])
+        )
+    return True
+
+
 @router.post("/webhooks/alertmanager")
 async def alertmanager_webhook(
     request: Request, payload: dict[str, Any], _: None = Depends(require_webhook_token)
@@ -45,54 +94,25 @@ async def alertmanager_webhook(
     queued, resolved, duplicates = 0, 0, 0
 
     for alert in payload.get("alerts", []):
-        labels = alert.get("labels", {})
-        alert_name = labels.get("alertname")
-        starts_at = _parse_ts(alert.get("startsAt"))
-        if not alert_name or not starts_at:
-            raise HTTPException(status_code=422, detail="alert missing alertname or startsAt")
-        fp = alert_fingerprint(alert)
-
         if alert.get("status") == "resolved":
+            labels = alert.get("labels", {})
+            if not labels.get("alertname") or not _parse_ts(alert.get("startsAt")):
+                raise HTTPException(status_code=422, detail="alert missing alertname or startsAt")
             if await resolve_alert_by_fingerprint(
-                request.app, fingerprint=fp, ends_at=_parse_ts(alert.get("endsAt"))
+                request.app,
+                fingerprint=alert_fingerprint(alert),
+                ends_at=_parse_ts(alert.get("endsAt")),
             ):
                 resolved += 1
             continue
-
-        async with pool.connection() as conn:  # one tx: insert + group
-            cur = await conn.execute(
-                """
-                INSERT INTO alerts (fingerprint, alert_name, service, status, starts_at,
-                                    labels, annotations, raw_payload)
-                VALUES (%s, %s, %s, 'firing', %s, %s, %s, %s)
-                ON CONFLICT (fingerprint, starts_at) DO NOTHING
-                RETURNING id
-                """,
-                (
-                    fp,
-                    alert_name,
-                    labels.get("service"),
-                    starts_at,
-                    Json(labels),
-                    Json(alert.get("annotations", {})),
-                    Json(alert),
-                ),
-            )
-            row = await cur.fetchone()
-            if not row:  # Alertmanager re-send within repeat_interval
-                duplicates += 1
-                continue
-            incident_id = await attach_incident(
-                conn,
-                fingerprint=fp,
-                service=labels.get("service"),
-                alert_name=alert_name,
-                grouping_minutes=settings.incident_grouping_minutes,
-            )
-            await conn.execute(
-                "UPDATE alerts SET incident_id = %s WHERE id = %s", (incident_id, row[0])
-            )
+        try:
+            inserted = await ingest_alert(pool, alert, settings.incident_grouping_minutes)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if inserted:
             queued += 1
+        else:
+            duplicates += 1
 
     if queued:
         # Inline-after-ACK (ADR-006): FastAPI sends the response; the task

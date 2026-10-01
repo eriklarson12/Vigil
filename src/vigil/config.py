@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     stale_claim_minutes: int = 10
     incident_grouping_minutes: int = 60
     rate_limit_per_min: int = 60  # per authenticated sender, webhook + Slack routes
+    anomaly_detection: str = "off"  # on | off
 
 
 @lru_cache

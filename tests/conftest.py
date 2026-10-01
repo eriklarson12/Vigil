@@ -30,6 +30,7 @@ os.environ["GITHUB_WRITE_TOKEN"] = ""
 os.environ["ISSUES_MODE"] = "mock"
 os.environ["ISSUES_REPO"] = ""
 os.environ["RATE_LIMIT_PER_MIN"] = "60"  # test_rate_limit.py counts to 61
+os.environ["ANOMALY_DETECTION"] = "off"
 os.environ["GITHUB_FIXTURES_DIR"] = str(ROOT / "tests" / "fixtures" / "github")
 os.environ["LLM_FIXTURES_DIR"] = str(ROOT / "tests" / "fixtures" / "llm")
 os.environ["SERVICES_FILE"] = str(ROOT / "services.yaml")
