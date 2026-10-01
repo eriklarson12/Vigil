@@ -14,6 +14,7 @@ from psycopg.types.json import Json
 from vigil.config import get_settings
 from vigil.ingest.fingerprint import alert_fingerprint, attach_incident
 from vigil.ingest.resolve import resolve_alert_by_fingerprint
+from vigil.ratelimit import enforce_rate_limit
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -25,6 +26,8 @@ def require_webhook_token(request: Request) -> None:
     expected = f"Bearer {settings.alertmanager_webhook_token}"
     if not secrets.compare_digest(auth, expected):
         raise HTTPException(status_code=401, detail="invalid token")
+    # One valid token means one sender, so the key is constant; hashing the token buys nothing.
+    enforce_rate_limit(request, "webhook")
 
 
 def _parse_ts(value: str | None) -> datetime | None:

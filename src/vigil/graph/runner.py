@@ -8,6 +8,7 @@
 """
 
 import asyncio
+import weakref
 from typing import Any
 
 import structlog
@@ -74,6 +75,10 @@ class Runner:
         self._cp_pool: AsyncConnectionPool | None = None
         self._drain_task: asyncio.Task | None = None
         self._bg: set[asyncio.Task] = set()
+        # The drain and the resume tick claim *different* alerts, so SKIP LOCKED cannot stop
+        # both running one incident's triage thread at once in a storm. In-process is enough
+        # at max-replicas 1 (ADR-014). A lock leaves the dict once nobody holds it.
+        self._triage_locks: weakref.WeakValueDictionary[str, asyncio.Lock] = weakref.WeakValueDictionary()
 
     async def setup(self) -> None:
         """Build the checkpointer (needs its own autocommit/dict_row pool) and graphs."""
@@ -132,6 +137,13 @@ class Runner:
 
     async def run_triage(self, alert_row: dict[str, Any]) -> dict[str, Any]:
         incident_id = alert_row["incident_id"]
+        lock = self._triage_locks.get(incident_id)
+        if lock is None:
+            lock = self._triage_locks[incident_id] = asyncio.Lock()
+        async with lock:
+            return await self._run_triage_locked(alert_row, incident_id)
+
+    async def _run_triage_locked(self, alert_row: dict[str, Any], incident_id: str) -> dict[str, Any]:
         config = {"configurable": {"thread_id": f"triage:{incident_id}"}}
         snapshot = await self._triage.aget_state(config)
         if snapshot and snapshot.next:

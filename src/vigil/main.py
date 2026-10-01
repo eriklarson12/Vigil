@@ -18,6 +18,7 @@ from vigil.ingest.webhook import router as webhook_router
 from vigil.llm.client import get_llm_client
 from vigil.logging_utils import configure_logging
 from vigil.rag.embed import get_embedder
+from vigil.ratelimit import SlidingWindowLimiter
 from vigil.slack.interactions import router as slack_router
 from vigil.slack.sender import SlackSender
 
@@ -56,6 +57,8 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="Vigil", version="0.1.0", lifespan=lifespan)
     settings = get_settings()
+    # Per app, not a module global: each integration test builds its own app.
+    app.state.limiter = SlidingWindowLimiter(settings.rate_limit_per_min)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.dashboard_url, "http://localhost:5173"],

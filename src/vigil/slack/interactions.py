@@ -22,6 +22,7 @@ from vigil.commits.rollback import claim_revert, load_revert_context
 from vigil.config import get_settings
 from vigil.ingest.queue import add_event
 from vigil.ingest.resolve import resolve_incident
+from vigil.ratelimit import enforce_rate_limit
 from vigil.slack.blocks import SLASH_HELP, STATUS_LIMIT, build_status_message
 
 log = structlog.get_logger()
@@ -60,6 +61,7 @@ async def slack_interactions(request: Request) -> dict[str, str]:
     raw = await _require_signed(request)
     form = parse_qs(raw.decode())
     payload = json.loads(form.get("payload", ["{}"])[0])
+    enforce_rate_limit(request, f"slack:{(payload.get('team') or {}).get('id', 'unknown')}")
     for action in payload.get("actions", []):
         if action.get("action_id") == "resolve_incident":
             incident_id = action.get("value")
@@ -96,7 +98,9 @@ async def _propose_revert_click(
 async def slack_commands(request: Request) -> dict[str, Any]:
     # Slack drops the reply after 3s, so this reads Postgres directly and never touches the graph.
     raw = await _require_signed(request)
-    words = parse_qs(raw.decode()).get("text", [""])[0].split()
+    form = parse_qs(raw.decode())
+    enforce_rate_limit(request, f"slack:{form.get('team_id', ['unknown'])[0]}")
+    words = form.get("text", [""])[0].split()
     subcommand = words[0].lower() if words else "status"
     log.info("slack_command", subcommand=subcommand)
     if subcommand == "status":

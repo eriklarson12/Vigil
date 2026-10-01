@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-358%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-369%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -202,6 +202,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `DASHBOARD_URL` | | CORS allowlist entry and the target of the brief's Dashboard button |
 | `SERVICES_FILE` | | Service catalog path (default `services.yaml`) |
 | `COMMIT_LOOKBACK_HOURS` | | Commit window scored per incident (default `48`) |
+| `RATE_LIMIT_PER_MIN` | | Requests per minute per sender on the webhook and Slack routes before a `429` (default `60`) |
 
 </details>
 
@@ -217,9 +218,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 248 unit tests, plus suites that need the database container
+# Backend: 253 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 44 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 50 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -281,6 +282,7 @@ Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0df
 - **Database → Neon**, free tier with pgvector. Migrations apply on app startup.
 - **Dashboard → Vercel**, root directory `frontend/`, with `VITE_API_URL` pointed at the container app.
 - Set `DASHBOARD_URL` on the API to the Vercel origin: it is both the CORS allowlist entry and the target of the brief's Dashboard button.
+- The webhook and both Slack routes answer `429` with `Retry-After` past `RATE_LIMIT_PER_MIN`, counted per authenticated sender after the token or signature check.
 - A scheduled workflow POSTs `/internal/resume` every 15 minutes, which is what makes scale-to-zero safe.
 
 ## Limitations
@@ -289,7 +291,7 @@ Live on Azure Container Apps at [`/healthz`](https://vigil-app.yellowpond-d0a0df
 - **The dashboard is read-only and unauthenticated.** That is deliberate for synthetic data. Add authentication before pointing it at anything real; the state-changing endpoints already require a bearer token.
 - **Free-tier quotas are a hard ceiling.** A Postgres-backed daily budget stops generation calls at `LLM_DAILY_BUDGET`, and Vigil falls back to the lighter model and then to the deterministic brief rather than queueing spend.
 - **The first request after idle is slow.** Scale-to-zero plus a Neon cold start means a few seconds on the first hit, which is the cost of the $0 budget.
-- **One replica.** The `SKIP LOCKED` queue is built for more, but the free grant is not, so throughput is bounded by a single container.
+- **One replica.** The `SKIP LOCKED` queue is built for more, but the free grant is not, so throughput is bounded by a single container. The rate-limit windows and the per-incident triage lock live in process memory for the same reason; a second replica would need both moved into Postgres.
 - **Storage is pruned, not archived.** The Neon free tier is 0.5 GB, so the resume tick trims old incidents and checkpoints on a schedule.
 
 ---
