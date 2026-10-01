@@ -24,7 +24,7 @@ async def client():
         async with deps.pool.connection() as conn:
             await conn.execute(
                 "TRUNCATE alerts, incidents, incident_events, commit_candidates,"
-                " deploy_events, postmortems, runbooks, runbook_chunks, llm_budget CASCADE"
+                " deploy_events, postmortems, runbooks, runbook_chunks, llm_budget, metric_points CASCADE"
             )
             for t in ("checkpoints", "checkpoint_blobs", "checkpoint_writes"):
                 await conn.execute(f"TRUNCATE {t}")

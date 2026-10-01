@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-369%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-393%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -36,6 +36,7 @@ The first ten minutes of an incident go to gathering context: what changed, who 
 - **The fix is one click away, and a human makes it.** When the culprit clears 0.65 confidence and the verdict says to undo it, the brief adds a "Propose revert PR" button. The click is the approval. Vigil builds the revert on top of the current default branch through GitHub's Git Data API, refuses merge commits and any file changed since the culprit, and opens a PR it never merges. It writes with a separate token, so the read-only one never gains write access, and a retried click resumes its own branch instead of opening a second PR.
 - **The postmortem writes itself.** Resolving an incident, in Slack or over the API, starts a second graph that reads the timeline the pipeline already recorded and posts a blameless write-up in the brief's own thread.
 - **Action items become issues, exactly once.** Each postmortem action item is filed as a labeled GitHub issue. Filing runs after the postmortem graph, so the resume tick can finish a run a killed container left behind. Each URL is stored the moment it exists, and a hidden marker in every issue body lets a retry adopt an issue whose URL never reached Postgres instead of filing it twice.
+- **Detection feeds the same pipeline as alerts.** With `ANOMALY_DETECTION=on`, each resume tick runs a z-score check over per-service rpm and error-rate series: a 3 hour baseline, and three consecutive points above 3 sigma. A hit becomes an Alertmanager-shaped `AnomalyDetected` alert that goes through the webhook's own ingest function, so dedup, grouping, triage, and the brief are unchanged. The alert's start time is the first point of the anomalous run, so the next tick over the same spike dedups instead of paging again. No model call is involved.
 - **Hybrid retrieval, because runbooks are full of identifiers.** Runbook text is dense with exact strings such as service names, error codes, and table names, where lexical search beats embeddings. Vector and full-text results are fused with RRF and boosted when the runbook is tagged for the failing service.
 - **Postgres is the queue.** `FOR UPDATE SKIP LOCKED` with a stale-claim reclaim after 10 minutes handles dozens of alerts a day without Kafka, Celery, or Redis. The same database holds vectors, checkpoints, and the LLM budget, so the entire system is one managed dependency.
 - **Scale-to-zero survives mid-incident death.** A GitHub Actions cron POSTs `/internal/resume` every 15 minutes; the request itself wakes the container, and the tick reclaims stranded triage runs, resumes checkpointed graphs, generates missing postmortems, and prunes old rows to stay inside the 0.5 GB free tier.
@@ -116,6 +117,14 @@ The demo seeds and embeds the runbooks, plants the scenario's deploy events, fir
 `vigil-sim list` shows recent incidents and `vigil-sim delete <id>` removes one along with its
 alerts, timeline, candidates, postmortem, and graph checkpoints. Deletion is irreversible and
 needs the operator bearer token, so it is useful for clearing a bad demo run off the dashboard.
+
+To see detection open an incident with no alert at all, start the server with
+`ANOMALY_DETECTION=on`, write three hours of metrics with an error-rate spike, and run one tick:
+
+```bash
+uv run vigil-sim metrics --inject-spike checkout
+curl -X POST -H "Authorization: Bearer dev-token" localhost:8000/internal/resume
+```
 
 ## Demo scenarios
 
@@ -203,6 +212,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `SERVICES_FILE` | | Service catalog path (default `services.yaml`) |
 | `COMMIT_LOOKBACK_HOURS` | | Commit window scored per incident (default `48`) |
 | `RATE_LIMIT_PER_MIN` | | Requests per minute per sender on the webhook and Slack routes before a `429` (default `60`) |
+| `ANOMALY_DETECTION` | | `on` runs the z-score detector over `metric_points` on each resume tick (default `off`) |
 
 </details>
 
@@ -218,9 +228,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 253 unit tests, plus suites that need the database container
+# Backend: 272 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 50 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 55 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -254,9 +264,10 @@ Several suites exist for failures this system could otherwise hide:
 | `GET` | `/api/incidents` | Incident list for the dashboard |
 | `GET` | `/api/incidents/{id}` | One incident with candidates, runbook, brief, timeline, and postmortem |
 | `GET` | `/api/stats` | MTTA, MTTR, triage quality, and model spend, computed on read |
+| `GET` | `/api/metrics/{service}` | The last 24 hours of the service's rpm and error-rate points |
 | `POST` | `/api/incidents/{id}/resolve` | Manual resolve, starts the postmortem graph (bearer token) |
 | `DELETE` | `/api/incidents/{id}` | Hard-delete one incident with its alerts, timeline, candidates, postmortem, and graph checkpoints (bearer token) |
-| `POST` | `/internal/resume` | Cron tick: reclaim stale work, resume checkpoints, finish stranded revert PRs and action-item issues, prune (bearer token) |
+| `POST` | `/internal/resume` | Cron tick: detect anomalies, reclaim stale work, resume checkpoints, finish stranded revert PRs and action-item issues, prune (bearer token) |
 | `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 
 </details>

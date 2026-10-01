@@ -5,6 +5,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from psycopg.rows import dict_row
 
+from vigil.impact.anomaly import METRICS
+
 router = APIRouter(prefix="/api")
 
 
@@ -203,3 +205,25 @@ async def get_stats(request: Request) -> dict[str, Any]:
     stats["llm"]["daily_budget"] = deps.settings.llm_daily_budget
     stats["llm"]["today_used"] = stats["llm"]["today_used"] or 0
     return stats
+
+
+@router.get("/metrics/{service}")
+async def get_metrics(service: str, request: Request) -> dict[str, Any]:
+    """R7 series for one service, last 24h (the retention window)."""
+    deps = request.app.state.deps
+    if deps.catalog.get(service) is None:
+        raise HTTPException(status_code=404, detail="unknown service")
+    async with deps.pool.connection() as conn:
+        cur = await conn.execute(
+            """
+            SELECT metric, ts, value FROM metric_points
+            WHERE service = %s AND ts > now() - interval '24 hours'
+            ORDER BY metric, ts
+            """,
+            (service,),
+        )
+        rows = await cur.fetchall()
+    series: dict[str, list[dict[str, Any]]] = {m: [] for m in METRICS}
+    for metric, ts, value in rows:
+        series.setdefault(metric, []).append({"ts": ts.isoformat(), "value": value})
+    return {"service": service, "metrics": series}

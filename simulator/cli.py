@@ -1,4 +1,4 @@
-"""vigil-sim — seed | fire | resolve | demo | list | delete (spec §15).
+"""vigil-sim — seed | fire | resolve | demo | metrics | list | delete (spec §15).
 
 Timestamps are rewritten relative to *now* at fire time so the scoring
 time-decay behaves identically no matter when the demo runs.
@@ -201,6 +201,49 @@ def demo(
     typer.echo(f"incident:   {url}/api/incidents/{incident['id']}")
     typer.echo("postmortem preview:")
     typer.echo(detail["postmortem"]["markdown"][:600])
+
+
+async def _write_metrics(minutes: int, spike_service: str | None) -> int:
+    from vigil.config import get_settings
+    from vigil.db.pool import apply_migrations, create_pool, open_pool_with_retry
+    from vigil.impact.anomaly import generate_series
+    from vigil.impact.catalog import ServiceCatalog
+
+    settings = get_settings()
+    catalog = ServiceCatalog.load(settings.services_file)
+    if spike_service and catalog.get(spike_service) is None:
+        raise typer.BadParameter(
+            f"unknown service '{spike_service}'. Available: {', '.join(sorted(catalog.services))}"
+        )
+    now = datetime.now(UTC)
+    rows = [
+        row
+        for name, cfg in sorted(catalog.services.items())
+        for row in generate_series(name, cfg["baseline_rpm"], now, minutes, spike=name == spike_service)
+    ]
+    pool = create_pool(settings.database_url)
+    await open_pool_with_retry(pool)
+    await apply_migrations(pool)
+    async with pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.executemany(
+                "INSERT INTO metric_points (service, metric, ts, value) VALUES (%s, %s, %s, %s)"
+                " ON CONFLICT (service, metric, ts) DO NOTHING",
+                rows,
+            )
+    await pool.close()
+    return len(rows)
+
+
+@app.command()
+def metrics(
+    minutes: int = typer.Option(180, help="minutes of 1-minute points per service"),
+    inject_spike: str | None = typer.Option(None, help="service whose error_rate spikes 8x"),
+) -> None:
+    """Write synthetic rpm/error_rate series for the anomaly detector (R7)."""
+    written = asyncio.run(_write_metrics(minutes, inject_spike))
+    spike = f", spike on {inject_spike}" if inject_spike else ""
+    typer.echo(f"wrote {written} metric points{spike}")
 
 
 # `list` and `delete` never build Settings(): the repo-root .env points at

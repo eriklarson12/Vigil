@@ -9,6 +9,7 @@
 
 import asyncio
 import weakref
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
@@ -20,7 +21,9 @@ from vigil.graph.action_items import MAX_ATTEMPTS, PENDING_SQL, file_action_item
 from vigil.graph.deps import Deps
 from vigil.graph.postmortem import build_postmortem_graph
 from vigil.graph.triage import build_triage_graph
+from vigil.impact.anomaly import BASELINE_WINDOW, EXCLUDE_RECENT, METRICS, detect, synthesize_alert
 from vigil.ingest.queue import claim_next, mark_alert
+from vigil.ingest.webhook import ingest_alert
 
 log = structlog.get_logger()
 
@@ -63,6 +66,8 @@ PRUNE_SQL = [
     """,
     # 4. Deploy events: R6 writes these once per incident per service in the repo.
     "DELETE FROM deploy_events WHERE finished_at < now() - interval '90 days'",
+    # 5. Metric points (R7): the detector reads at most the trailing ~3h.
+    "DELETE FROM metric_points WHERE ts < now() - interval '24 hours'",
 ]
 
 
@@ -192,7 +197,9 @@ class Runner:
     # -- resume tick (spec §13.4) ----------------------------------------------
 
     async def resume_tick(self) -> dict[str, int]:
-        """Reclaim stranded work, run missing postmortems, prune. Idempotent."""
+        """Detect anomalies, reclaim stranded work, run missing postmortems, prune. Idempotent."""
+        # Before the drain, so this same tick triages what the detector queues.
+        anomalies = await self._detect_anomalies()
         drained = 0
         while True:
             row = await claim_next(self._deps.pool, self._deps.settings.stale_claim_minutes)
@@ -221,12 +228,56 @@ class Runner:
         issues = await self._resume_issues()
         pruned = await self.prune()
         return {
+            "anomalies_detected": anomalies,
             "alerts_drained": drained,
             "postmortems_run": len(pending_pm),
             "reverts_resumed": reverts,
             "issues_resumed": issues,
             "rows_pruned": pruned,
         }
+
+    async def _detect_anomalies(self) -> int:
+        """Queue one AnomalyDetected alert per anomalous service (R7).
+
+        At most one per service per tick (storm guard). The alert's startsAt is the run's first
+        point, so a later tick over the same spike hits the (fingerprint, starts_at) dedup.
+        """
+        settings = self._deps.settings
+        if settings.anomaly_detection != "on":
+            return 0
+        queued = 0
+        lookback = BASELINE_WINDOW + EXCLUDE_RECENT
+        try:
+            for service in sorted(self._deps.catalog.services):
+                for metric in METRICS:
+                    async with self._deps.pool.connection() as conn:
+                        cur = await conn.execute(
+                            """
+                            SELECT ts, value FROM metric_points
+                            WHERE service = %s AND metric = %s
+                              AND ts >= (SELECT max(ts) FROM metric_points
+                                         WHERE service = %s AND metric = %s) - %s
+                              AND ts > now() - %s
+                            ORDER BY ts
+                            """,
+                            (service, metric, service, metric, lookback, lookback),
+                        )
+                        points = [(r[0], r[1]) for r in await cur.fetchall()]
+                    if not points or points[-1][0] < datetime.now(UTC) - timedelta(
+                        minutes=settings.stale_claim_minutes
+                    ):
+                        continue  # stale series: a demo spike from hours ago must not page
+                    detection = detect(points)
+                    if detection is None:
+                        continue
+                    alert = synthesize_alert(service, metric, detection)
+                    if await ingest_alert(self._deps.pool, alert, settings.incident_grouping_minutes):
+                        queued += 1
+                        log.info("anomaly_detected", service=service, metric=metric, z=round(detection.z, 2))
+                    break
+        except Exception as exc:  # noqa: BLE001 - detection must never fail the tick
+            log.error("anomaly_detection_failed", error=str(exc))
+        return queued
 
     async def _resume_reverts(self) -> int:
         """Finish revert PRs stranded in `requested` by a killed container.
