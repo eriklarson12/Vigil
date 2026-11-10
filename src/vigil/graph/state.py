@@ -25,6 +25,7 @@ class TriageState(TypedDict, total=False):
 class PostmortemState(TypedDict, total=False):
     incident_id: str
     record: dict[str, Any]           # gather_timeline output
+    fixture_key: str | None          # FakeLLMClient only; never part of `record`
     postmortem: dict[str, Any] | None
     markdown: str | None
     errors: Annotated[dict[str, str], operator.or_]

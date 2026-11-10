@@ -27,7 +27,7 @@ from vigil.config import get_settings
 from vigil.db.pool import apply_migrations, create_pool, open_pool_with_retry
 from vigil.rag.chunker import chunk_markdown
 from vigil.rag.embed import vec_literal
-from vigil.rag.retrieve import build_query_text, fused_rows
+from vigil.rag.retrieve import KEYWORD_TSQUERY, build_query_text, fused_rows
 
 ROOT = pathlib.Path(__file__).parent.parent.parent
 FIXTURES = ROOT / "tests" / "fixtures" / "embeddings"
@@ -197,6 +197,20 @@ async def test_retrieval_hits_the_right_runbook(pool):
 
     assert hits >= HIT_AT_3_MIN, f"hit@3 {hits}/{total} < {HIT_AT_3_MIN}\n" + "\n".join(report)
     assert firsts >= RANK_AT_1_MIN, f"rank@1 {firsts}/{total} < {RANK_AT_1_MIN}\n" + "\n".join(report)
+
+
+async def test_keyword_arm_matches_every_scenario_query(pool):
+    """RRF hides a dead arm: with no keyword rows the fusion is vector-only and the gates
+    above still pass. An AND-joined tsquery did exactly that, matching no chunk at all."""
+    queries = _load("queries")["vectors"]
+    async with pool.connection() as conn:
+        for scenario, recorded in sorted(queries.items()):
+            cur = await conn.execute(
+                f"SELECT count(*) FROM runbook_chunks WHERE tsv @@ {KEYWORD_TSQUERY}",
+                {"qtext": recorded["query_text"]},
+            )
+            (hits,) = await cur.fetchone()
+            assert hits, f"{scenario}: the keyword arm matched no chunk"
 
 
 async def test_corrupting_a_vector_breaks_its_retrieval(pool):

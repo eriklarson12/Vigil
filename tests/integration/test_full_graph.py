@@ -9,6 +9,7 @@ import asyncio
 import json
 import pathlib
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -39,6 +40,20 @@ def _payload(status: str, starts_at: datetime) -> dict:
     }
 
 
+class _RecordingLLM:
+    def __init__(self, inner: Any):
+        self._inner = inner
+        self.prompts: dict[str, str] = {}
+
+    async def generate_structured(
+        self, system: str, user: str, schema: Any, call_type: str, fixture_key: str | None = None
+    ) -> Any:
+        self.prompts[call_type] = system + user
+        return await self._inner.generate_structured(
+            system, user, schema, call_type, fixture_key=fixture_key
+        )
+
+
 async def _wait(check, timeout=60.0):
     deadline = asyncio.get_event_loop().time() + timeout
     while asyncio.get_event_loop().time() < deadline:
@@ -51,6 +66,8 @@ async def _wait(check, timeout=60.0):
 
 async def test_fire_brief_resolve_postmortem(client):
     c, deps = client
+    llm = _RecordingLLM(deps.llm)
+    deps.llm = llm
     now = datetime.now(UTC)
     for d in SCENARIO.get("deploys", []):
         async with deps.pool.connection() as conn:
@@ -99,6 +116,12 @@ async def test_fire_brief_resolve_postmortem(client):
     detail = await _wait(postmortem_ready)
     assert "Postmortem" in detail["postmortem"]["markdown"]
     assert detail["incident"]["status"] == "postmortem_done"
+
+    # The scenario label names the planted cause. It picks the fake's fixture out of
+    # band and must not reach any of the three prompts a real model would read.
+    assert set(llm.prompts) == {"commit_ranking", "brief_composition", "postmortem"}
+    for call_type, prompt in llm.prompts.items():
+        assert SCENARIO["scenario"] not in prompt, f"{call_type} prompt names the scenario"
 
     # double-resolve is a no-op
     resp = await c.post(f"/api/incidents/{incident['id']}/resolve", headers=TOKEN)

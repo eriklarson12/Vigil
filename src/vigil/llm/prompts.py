@@ -5,6 +5,9 @@ import json
 from typing import Any
 
 SHORT_SHA = 10  # the sha width the model is shown, and so the width it answers with
+# The simulator's label names the planted cause. It selects a FakeLLMClient fixture
+# out of band and MUST NOT reach a prompt.
+SCENARIO_LABEL = "scenario"
 
 COMMIT_RANKING_SYSTEM = """You are the commit-analysis engine of Vigil, an automated incident responder.
 Given a production alert and a set of candidate commits (each pre-scored by
@@ -66,7 +69,6 @@ def build_commit_ranking_prompt(
         f"service: {labels.get('service')}"
         + (f" — tier {service.get('tier')}, user_facing={service.get('user_facing')}" if service else ""),
         f"severity label: {labels.get('severity')}",
-        f"scenario: {labels.get('scenario', 'n/a')}",
         f"started: {alert.get('starts_at')}",
         f"summary: {annotations.get('summary', '')}",
         f"description: {annotations.get('description', '')}",
@@ -126,7 +128,6 @@ def build_brief_prompt(
         [
             "## Alert",
             f"{labels.get('alertname')} on {labels.get('service')} — {annotations.get('summary', '')}",
-            f"scenario: {labels.get('scenario', 'n/a')}",
             f"started: {alert.get('starts_at')}",
             "",
             "## Deterministic impact (computed, do not alter)",

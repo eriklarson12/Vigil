@@ -17,7 +17,20 @@ def test_ranking_prompt_truncates_long_diffs():
     }]
     _, user = build_commit_ranking_prompt(ALERT, None, candidates)
     assert "[diff truncated at 120 lines]" in user
-    assert "scenario: bad_deploy" in user  # FakeLLM scenario resolution depends on this
+
+
+def test_prompts_never_name_the_scenario():
+    """The simulator's label names the planted cause; a model that reads it is being told the answer."""
+    candidates = [{
+        "score": 0.7,
+        "commit": {"sha": "a" * 10, "author": "d", "committed_at": "t", "message": "m",
+                   "files": [], "patch": ""},
+    }]
+    for _, user in (
+        build_commit_ranking_prompt(ALERT, None, candidates),
+        build_brief_prompt(ALERT, None, None, None, []),
+    ):
+        assert "bad_deploy" not in user and "scenario" not in user
 
 
 def test_brief_prompt_states_unavailable_commit_analysis():

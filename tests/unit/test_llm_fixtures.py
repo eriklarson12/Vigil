@@ -27,18 +27,27 @@ def test_fixture_validates_against_schema(path):
     schema.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
 
-async def test_fake_client_resolves_scenario_from_prompt():
+async def test_fake_client_resolves_scenario_from_fixture_key():
     client = FakeLLMClient(FIXTURES)
     result = await client.generate_structured(
-        "system", "## Alert\nscenario: bad_deploy\n…", CommitAnalysis, "commit_ranking"
+        "system", "## Alert", CommitAnalysis, "commit_ranking", fixture_key="bad_deploy"
     )
     assert result.likely_culprit_sha == planted_culprit("bad_deploy")
 
 
-async def test_fake_client_falls_back_to_default():
+async def test_fake_client_ignores_a_scenario_named_in_the_prompt():
     client = FakeLLMClient(FIXTURES)
     result = await client.generate_structured(
-        "system", "scenario: something_unknown", CommitAnalysis, "commit_ranking"
+        "system", "scenario: bad_deploy", CommitAnalysis, "commit_ranking"
+    )
+    assert result.likely_culprit_sha is None
+
+
+@pytest.mark.parametrize("key", ["something_unknown", "../github/bad_deploy", None])
+async def test_fake_client_falls_back_to_default(key):
+    client = FakeLLMClient(FIXTURES)
+    result = await client.generate_structured(
+        "system", "## Alert", CommitAnalysis, "commit_ranking", fixture_key=key
     )
     assert result.likely_culprit_sha is None
 

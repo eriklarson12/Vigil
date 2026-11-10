@@ -5,6 +5,9 @@ GeminiClient: budget check -> primary model -> 10s backoff -> fallback model.
 FakeLLMClient: replays recorded fixtures validated through the REAL Pydantic
 schemas, so schema drift breaks tests loudly. Also used at runtime when no
 GEMINI_API_KEY is configured (offline demos).
+
+`fixture_key` selects the fake's fixture. It travels beside the prompt, never in
+it: a real model MUST NOT see which scenario it is being asked about.
 """
 
 import asyncio
@@ -32,7 +35,9 @@ class LLMUnavailable(Exception):
 
 
 class LLMClient(Protocol):
-    async def generate_structured(self, system: str, user: str, schema: type[T], call_type: str) -> T: ...
+    async def generate_structured(
+        self, system: str, user: str, schema: type[T], call_type: str, fixture_key: str | None = None
+    ) -> T: ...
 
 
 class GeminiClient:
@@ -43,7 +48,9 @@ class GeminiClient:
         self._settings = settings
         self._pool = pool
 
-    async def generate_structured(self, system: str, user: str, schema: type[T], call_type: str) -> T:
+    async def generate_structured(
+        self, system: str, user: str, schema: type[T], call_type: str, fixture_key: str | None = None
+    ) -> T:
         from google.genai import errors as genai_errors
         from google.genai import types
 
@@ -80,30 +87,21 @@ class GeminiClient:
 
 
 class FakeLLMClient:
-    """Fixture replay keyed {call_type}.{scenario}.json -> {call_type}.default.json.
+    """Fixture replay keyed {call_type}.{fixture_key}.json -> {call_type}.default.json.
 
-    The scenario is inferred by scanning the prompt for scenario tokens present
-    in the fixture inventory (simulator alerts carry a `scenario` label that
-    flows into every prompt). Demo/test mode only — documented in README.
+    Callers pass the simulator alert's `scenario` label as `fixture_key`.
+    Demo/test mode only — documented in README.
     """
 
     def __init__(self, fixtures_dir: str | pathlib.Path):
         self._dir = pathlib.Path(fixtures_dir)
 
-    def _scenarios_for(self, call_type: str) -> list[str]:
-        pattern = re.compile(rf"^{re.escape(call_type)}\.(.+)\.json$")
-        out = []
-        if self._dir.exists():
-            for p in self._dir.iterdir():
-                m = pattern.match(p.name)
-                if m and m.group(1) != "default":
-                    out.append(m.group(1))
-        return out
-
-    async def generate_structured(self, system: str, user: str, schema: type[T], call_type: str) -> T:
-        scenario = next((s for s in self._scenarios_for(call_type) if s in user or s in system), "default")
-        path = self._dir / f"{call_type}.{scenario}.json"
-        if not path.exists():
+    async def generate_structured(
+        self, system: str, user: str, schema: type[T], call_type: str, fixture_key: str | None = None
+    ) -> T:
+        path = self._dir / f"{call_type}.{fixture_key}.json"
+        # The name check keeps a hostile label from walking out of the fixtures directory.
+        if not fixture_key or not re.fullmatch(r"\w+", fixture_key) or not path.exists():
             path = self._dir / f"{call_type}.default.json"
         if not path.exists():
             raise LLMUnavailable(f"no LLM fixture for call_type={call_type}")

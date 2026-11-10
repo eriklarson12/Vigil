@@ -2,7 +2,11 @@
 failures, then degrades into `errors[node_name]` instead of raising. Retry
 policies are therefore implemented HERE, in-node, rather than via LangGraph's
 RetryPolicy — a node that raised past retries would fail the whole run, which
-is exactly what the contract forbids."""
+is exactly what the contract forbids.
+
+The one exception is `raises=True`, for a node whose output cannot be degraded
+away (post_slack). It raises NodeFailed past its retries, so the run stops with
+that node still pending in the checkpoint and a later claim resumes there."""
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -15,7 +19,13 @@ log = structlog.get_logger()
 NodeFn = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
-def degrading(name: str, retries: int = 0, backoff: float = 0.0) -> Callable[[NodeFn], NodeFn]:
+class NodeFailed(Exception):
+    """A `raises=True` node exhausted its retries. The run is resumable at that node."""
+
+
+def degrading(
+    name: str, retries: int = 0, backoff: float = 0.0, raises: bool = False
+) -> Callable[[NodeFn], NodeFn]:
     def decorate(fn: NodeFn) -> NodeFn:
         async def wrapper(state: dict[str, Any]) -> dict[str, Any]:
             for attempt in range(retries + 1):
@@ -27,6 +37,9 @@ def degrading(name: str, retries: int = 0, backoff: float = 0.0) -> Callable[[No
                         log.warning("node_retry", node=name, attempt=attempt + 1, error=detail)
                         await asyncio.sleep(backoff)
                         continue
+                    if raises:
+                        log.error("node_failed", node=name, error=detail)
+                        raise NodeFailed(f"{name}: {detail[:300]}") from exc
                     log.error("node_degraded", node=name, error=detail)
                     return {"errors": {name: detail[:300]}}
             return {"errors": {name: "unreachable"}}

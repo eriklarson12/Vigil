@@ -14,14 +14,20 @@ TOP_CHUNKS = 4
 MAX_RUNBOOKS = 2
 TAG_BOOST = 1.3
 
-HYBRID_SQL = """
+# The keyword arm ORs the alert's terms. plainto_tsquery and websearch_to_tsquery AND
+# them, and no chunk holds every word of an alert, so an AND query matches nothing and
+# the fusion silently degrades to vector-only. Going through plainto_tsquery keeps the
+# query on the same parser and stemmer as the indexed `tsv`.
+KEYWORD_TSQUERY = "replace(plainto_tsquery('english', %(qtext)s)::text, ' & ', ' | ')::tsquery"
+
+HYBRID_SQL = f"""
 WITH vec AS (
   SELECT id, row_number() OVER (ORDER BY embedding <=> %(qvec)s::vector) AS r
   FROM runbook_chunks ORDER BY embedding <=> %(qvec)s::vector LIMIT %(per_arm)s
 ), kw AS (
   SELECT id, row_number() OVER (ORDER BY ts_rank_cd(tsv, q) DESC) AS r
-  FROM runbook_chunks, websearch_to_tsquery('english', %(qtext)s) q
-  WHERE tsv @@ q LIMIT %(per_arm)s
+  FROM runbook_chunks, (SELECT {KEYWORD_TSQUERY} AS q) kwq
+  WHERE tsv @@ q ORDER BY r LIMIT %(per_arm)s
 ), fused AS (
   SELECT id, SUM(1.0 / (%(rrf_k)s + r)) AS rrf
   FROM (SELECT * FROM vec UNION ALL SELECT * FROM kw) u GROUP BY id

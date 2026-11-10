@@ -24,7 +24,12 @@ from vigil.graph.state import TriageState
 from vigil.impact.severity import classify
 from vigil.ingest.queue import add_event
 from vigil.llm.client import LLMUnavailable
-from vigil.llm.prompts import SHORT_SHA, build_brief_prompt, build_commit_ranking_prompt
+from vigil.llm.prompts import (
+    SCENARIO_LABEL,
+    SHORT_SHA,
+    build_brief_prompt,
+    build_commit_ranking_prompt,
+)
 from vigil.llm.schemas import BriefContent
 from vigil.rag.retrieve import hybrid_search
 from vigil.slack.blocks import build_brief
@@ -73,6 +78,9 @@ def apply_sha_guards(
 
 def build_triage_graph(deps: Deps, checkpointer: Any = None):
     settings = deps.settings
+
+    def _fixture_key(state: TriageState) -> str | None:
+        return state["alert"].get("labels", {}).get(SCENARIO_LABEL)
 
     @degrading("load_context", retries=2, backoff=0.5)
     async def load_context(state: TriageState) -> dict[str, Any]:
@@ -187,7 +195,9 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
             }
         candidates = [{"score": s["score"], "commit": by_sha[s["sha"]]} for s in top]
         system, user = build_commit_ranking_prompt(state["alert"], state.get("service"), candidates)
-        analysis = await deps.llm.generate_structured(system, user, CommitAnalysis, "commit_ranking")
+        analysis = await deps.llm.generate_structured(
+            system, user, CommitAnalysis, "commit_ranking", fixture_key=_fixture_key(state)
+        )
 
         result = apply_sha_guards(analysis, top, settings.confidence_floor)
         return {"commit_analysis": result.model_dump(), "llm_calls_used": 1}
@@ -218,13 +228,17 @@ def build_triage_graph(deps: Deps, checkpointer: Any = None):
             state.get("runbook_chunks") or [],
         )
         try:
-            brief = await deps.llm.generate_structured(system, user, BriefContent, "brief_composition")
+            brief = await deps.llm.generate_structured(
+                system, user, BriefContent, "brief_composition", fixture_key=_fixture_key(state)
+            )
             return {"brief_text": brief.model_dump(), "llm_calls_used": 1}
         except LLMUnavailable as exc:
             # Deterministic fallback brief takes over in post_slack (ADR-007).
             return {"brief_text": None, "errors": {"compose_brief": str(exc)[:300]}}
 
-    @degrading("post_slack", retries=3, backoff=2.0)
+    # raises=True: degrading here would finish the run with no brief, and a finished
+    # run is never resumed. Failing instead leaves post_slack pending for the next claim.
+    @degrading("post_slack", retries=3, backoff=2.0, raises=True)
     async def post_slack(state: TriageState) -> dict[str, Any]:
         incident_id = state["incident_id"]
         async with deps.pool.connection() as conn:

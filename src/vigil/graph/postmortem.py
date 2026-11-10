@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 from vigil.graph.deps import Deps
 from vigil.graph.nodes_util import degrading
 from vigil.graph.state import PostmortemState
-from vigil.llm.prompts import build_postmortem_prompt
+from vigil.llm.prompts import SCENARIO_LABEL, build_postmortem_prompt
 from vigil.llm.schemas import Postmortem
 
 log = structlog.get_logger()
@@ -103,7 +103,7 @@ def build_postmortem_graph(deps: Deps, checkpointer: Any = None):
             "alerts": [
                 {
                     "alert_name": a["alert_name"],
-                    "labels": a["labels"],
+                    "labels": {k: v for k, v in a["labels"].items() if k != SCENARIO_LABEL},
                     "annotations": a["annotations"],
                     "starts_at": str(a["starts_at"]),
                     "ends_at": str(a["ends_at"]) if a["ends_at"] else None,
@@ -138,7 +138,10 @@ def build_postmortem_graph(deps: Deps, checkpointer: Any = None):
             },
             "owner": (service or {}).get("owner", "on-call"),
         }
-        return {"record": record, "errors": {}}
+        fixture_key = next(
+            (a["labels"][SCENARIO_LABEL] for a in alerts if SCENARIO_LABEL in a["labels"]), None
+        )
+        return {"record": record, "fixture_key": fixture_key, "errors": {}}
 
     @degrading("generate_postmortem_llm", retries=1, backoff=10.0)
     async def generate_postmortem_llm(state: PostmortemState) -> dict[str, Any]:
@@ -146,7 +149,9 @@ def build_postmortem_graph(deps: Deps, checkpointer: Any = None):
         if not record:
             raise RuntimeError("gather_timeline produced no record")
         system, user = build_postmortem_prompt(record)
-        pm = await deps.llm.generate_structured(system, user, Postmortem, "postmortem")
+        pm = await deps.llm.generate_structured(
+            system, user, Postmortem, "postmortem", fixture_key=state.get("fixture_key")
+        )
         incident = record["incident"]
         return {"postmortem": pm.model_dump(), "markdown": render_markdown(pm, incident)}
 

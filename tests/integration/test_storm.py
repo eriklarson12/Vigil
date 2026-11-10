@@ -31,13 +31,17 @@ class _GateLLM:
         self.parked = asyncio.Event()
         self.release = asyncio.Event()
 
-    async def generate_structured(self, system: str, user: str, schema: Any, call_type: str) -> Any:
+    async def generate_structured(
+        self, system: str, user: str, schema: Any, call_type: str, fixture_key: str | None = None
+    ) -> Any:
         self.calls.append(call_type)
         if call_type == "commit_ranking" and self._gated:
             self._gated = False
             self.parked.set()
             await self.release.wait()
-        return await self._inner.generate_structured(system, user, schema, call_type)
+        return await self._inner.generate_structured(
+            system, user, schema, call_type, fixture_key=fixture_key
+        )
 
 
 async def _post_alert(c, fingerprint: str) -> None:

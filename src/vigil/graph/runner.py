@@ -5,6 +5,8 @@
 - Resume: /internal/resume reclaims stranded work; a graph thread with an
   existing checkpoint is RESUMED (ainvoke(None, config)) — no duplicate LLM
   spend — then pending postmortems run, then prune() trims the database.
+- A brief that could not be posted (NodeFailed) keeps its alert claimed, so the
+  same reclaim retries the post once the claim goes stale.
 """
 
 import asyncio
@@ -19,6 +21,7 @@ from psycopg_pool import AsyncConnectionPool
 from vigil.commits.rollback import propose_revert
 from vigil.graph.action_items import MAX_ATTEMPTS, PENDING_SQL, file_action_items
 from vigil.graph.deps import Deps
+from vigil.graph.nodes_util import NodeFailed
 from vigil.graph.postmortem import build_postmortem_graph
 from vigil.graph.triage import build_triage_graph
 from vigil.impact.anomaly import BASELINE_WINDOW, EXCLUDE_RECENT, METRICS, detect, synthesize_alert
@@ -136,6 +139,9 @@ class Runner:
             try:
                 await self.run_triage(row)
                 await mark_alert(self._deps.pool, row["id"], "processed")
+            except NodeFailed as exc:
+                # The claim stays, so the stale-claim reclaim resumes the run at that node.
+                log.error("triage_stalled", alert_id=row["id"], error=str(exc))
             except Exception as exc:  # noqa: BLE001
                 log.error("triage_run_failed", alert_id=row["id"], error=str(exc))
                 await mark_alert(self._deps.pool, row["id"], "failed")
@@ -209,6 +215,8 @@ class Runner:
             try:
                 await self.run_triage(row)
                 await mark_alert(self._deps.pool, row["id"], "processed")
+            except NodeFailed as exc:
+                log.error("triage_stalled", alert_id=row["id"], error=str(exc))
             except Exception as exc:  # noqa: BLE001
                 log.error("resume_triage_failed", alert_id=row["id"], error=str(exc))
                 await mark_alert(self._deps.pool, row["id"], "failed")

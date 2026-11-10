@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-393%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-402%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -228,10 +228,10 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 272 unit tests, plus suites that need the database container
+# Backend: 279 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 55 tests against real Postgres, incl. the full pipeline
-uv run pytest -m retrieval_live   # 4 retrieval-quality tests against recorded embeddings
+uv run pytest -m integration      # 56 tests against real Postgres, incl. the full pipeline
+uv run pytest -m retrieval_live   # 5 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
 # Dashboard: 62 tests
