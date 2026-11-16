@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { track } from '../analytics'
 import { firstLine, formatTimestamp, percent, shortSha } from '../format'
 import { FEATURE_LABELS, FEATURE_ORDER, breakdown, WEIGHTS } from '../scoring'
 import type { CommitCandidate } from '../types'
@@ -39,7 +40,7 @@ export function CommitCandidates({ candidates, culpritSha, triageFinalized }: Pr
       <FeatureLegend />
 
       <ul className="divide-y divide-slate-800">
-        {candidates.map((c) => {
+        {candidates.map((c, index) => {
           const data = breakdown(c.feature_scores)
           const isCulprit = culpritSha ? c.sha.startsWith(culpritSha) || culpritSha.startsWith(c.sha) : false
           const expanded = open === c.sha
@@ -47,7 +48,10 @@ export function CommitCandidates({ candidates, culpritSha, triageFinalized }: Pr
             <li key={c.sha} className="py-3">
               <button
                 type="button"
-                onClick={() => setOpen(expanded ? null : c.sha)}
+                onClick={() => {
+                  if (!expanded) track('candidate_expand', { rank: index + 1, culprit: isCulprit })
+                  setOpen(expanded ? null : c.sha)
+                }}
                 className="w-full cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">

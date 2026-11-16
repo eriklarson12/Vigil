@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { track } from '../analytics'
 import { parseMrkdwn, safeUrl } from '../format'
 import type { SlackAction, SlackBlock, SlackBriefPayload, SlackText } from '../types'
 import { Empty } from './Panel'
@@ -116,6 +117,7 @@ function Mrkdwn({ text }: { text: string }) {
                 href={href}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => track('brief_link', { host: new URL(href, window.location.href).host })}
                 className="text-sky-400 underline decoration-sky-700 underline-offset-2"
               >
                 {node.text}

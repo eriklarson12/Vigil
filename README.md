@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-402%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-408%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -222,6 +222,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | Variable | Description |
 |---|---|
 | `VITE_API_URL` | API base URL, e.g. `http://localhost:8000`. Build-time, so changing it needs a redeploy |
+| `VITE_UMAMI_WEBSITE_ID` | Optional. Umami website ID for product events; unset, no third-party script loads. Pageviews and Core Web Vitals go to Vercel Analytics in production builds |
 
 </details>
 
@@ -234,7 +235,7 @@ uv run pytest -m integration      # 56 tests against real Postgres, incl. the fu
 uv run pytest -m retrieval_live   # 5 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
-# Dashboard: 62 tests
+# Dashboard: 68 tests
 cd frontend
 npm run test -- --run
 npm run lint
