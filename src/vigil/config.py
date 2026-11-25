@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.6-flash"
     gemini_fallback_model: str = "gemini-3.5-flash-lite"
     llm_mode: str = "auto"  # auto | gemini | fake
-    llm_daily_budget: int = 200
+    llm_daily_budget: int = 20  # gemini-3.6-flash free tier: 20 RPD per project (429, 2026-11-24)
     embedding_model: str = "gemini-embedding-001"
     embedding_dims: int = 768
     embeddings_mode: str = "auto"  # auto | gemini | fake

@@ -191,7 +191,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `LLM_MODE` | | `auto` (default), `gemini`, or `fake` |
 | `GEMINI_MODEL` | | Generation model (default `gemini-3.6-flash`) |
 | `GEMINI_FALLBACK_MODEL` | | Used when the primary model's quota is exhausted (default `gemini-3.5-flash-lite`) |
-| `LLM_DAILY_BUDGET` | | Generation calls per day, hard stop (default `200`) |
+| `LLM_DAILY_BUDGET` | | Generation calls per Pacific day, hard stop (default `20`, the primary model's free-tier daily quota) |
 | `EMBEDDING_MODEL` | | Embedding model (default `gemini-embedding-001`) |
 | `EMBEDDING_DIMS` | | Matryoshka truncation width, L2-normalized in code (default `768`) |
 | `EMBEDDINGS_MODE` | | `auto` (default), `gemini`, or `fake` (deterministic hash vectors) |
