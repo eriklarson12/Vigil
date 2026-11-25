@@ -134,8 +134,24 @@ async def test_click_proposes_mock_revert_once(client):
 
 
 async def test_click_refused_when_gate_fails(client):
+    """The click re-reads the verdict from Postgres; the brief's button is not a pass."""
     c, deps = client
     incident_id = await _fire(c, deps, "config_typo")
+    async with deps.pool.connection() as conn:
+        await conn.execute(
+            "UPDATE commit_candidates SET llm_suggested_action = 'config_fix'"
+            " WHERE incident_id = %s AND llm_rank = 1",
+            (incident_id,),
+        )
+
+    resp = await _click(c, incident_id)
+    assert resp.json()["text"] == "This incident's culprit does not qualify for a revert PR."
+    assert await _state(deps, incident_id) == (None, None)
+
+
+async def test_click_refused_without_a_culprit(client):
+    c, deps = client
+    incident_id = await _fire(c, deps, "cert_expiry")
 
     resp = await _click(c, incident_id)
     assert resp.json()["text"] == "This incident's culprit does not qualify for a revert PR."

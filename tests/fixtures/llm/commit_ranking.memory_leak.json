@@ -3,15 +3,15 @@
     {
       "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
       "rank": 1,
-      "confidence": 0.72,
-      "rationale": "cache.py replaces LRUCache(maxsize=10_000) with a plain dict that is only ever written to (get_sku inserts on miss, nothing evicts) \u2014 an unbounded cache matching the heap profile 'dominated by SKU lookup cache entries' and the linear RSS growth since the commit landed ~30h ago.",
+      "confidence": 0.95,
+      "rationale": "Commit 2ea16a2e6e replaced a bounded LRUCache (maxsize=10_000) with an unbounded dictionary _cache: dict[str, SkuRecord] in services/inventory/cache.py. Without eviction, every lookup stores new SKU entries indefinitely, directly causing the observed memory leak of ~70 MiB/hour and subsequent OOMKilled restarts on the inventory pods.",
       "suggested_action": "revert"
     },
     {
       "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
       "rank": 2,
-      "confidence": 0.05,
-      "rationale": "CI workflow caching cannot affect runtime pod memory.",
+      "confidence": 0.01,
+      "rationale": "Commit 634efe3656 only modifies CI workflow options in .github/workflows/ci.yml. It has no effect on inventory service runtime behavior or memory consumption.",
       "suggested_action": "investigate"
     }
   ],
