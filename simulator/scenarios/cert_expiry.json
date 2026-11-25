@@ -9,7 +9,8 @@
     },
     "annotations": {
       "summary": "checkout ingress TLS handshake failure ratio above 50% for 3 minutes",
-      "description": "97% of TLS handshakes on the checkout ingress fail, baseline under 0.1%. All client routes affected; upstream pods report healthy."
+      "description": "97% of TLS handshakes on the checkout ingress fail, baseline under 0.1%. All client routes affected; upstream pods report healthy.",
+      "runbook_url": "https://runbooks.example.com/tls-certificates"
     },
     "fingerprint": "fp-cert-expiry-001"
   },

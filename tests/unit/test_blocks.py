@@ -85,3 +85,17 @@ def test_confidence_bar():
     assert confidence_bar(0.78) == "▓▓▓▓░ 78%"
     assert confidence_bar(0.0) == "░░░░░ 0%"
     assert confidence_bar(1.0) == "▓▓▓▓▓ 100%"
+
+
+def test_fallback_says_when_the_alert_linked_the_runbook():
+    def runbook_line(source):
+        chunk = {"runbook_slug": "tls-certificates", "heading_path": "Renew", "source": source}
+        payload = build_brief(
+            incident={"id": "i-9"}, alert=ALERT, impact=IMPACT, commit_analysis=None,
+            commit_scores=[], runbook_chunks=[chunk], brief_text=None, errors={},
+            repo=None, dashboard_url="http://d",
+        )
+        return _texts(payload)
+
+    assert "Runbook (linked by alert)" in runbook_line("annotation")
+    assert "Runbook (top match)" in runbook_line("retrieval")

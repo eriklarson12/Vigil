@@ -134,8 +134,9 @@ def build_brief(
         )
     elif runbook_chunks:
         top = runbook_chunks[0]
+        label = "linked by alert" if top.get("source") == "annotation" else "top match"
         blocks.append(
-            _section(f"*Runbook (top match):* `{top['runbook_slug']}` → {top['heading_path']}")
+            _section(f"*Runbook ({label}):* `{top['runbook_slug']}` → {top['heading_path']}")
         )
     else:
         blocks.append(_section("*Runbook:* no matching runbook found"))
