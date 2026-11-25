@@ -8,8 +8,8 @@
       "scenario": "auth_key_rotation"
     },
     "annotations": {
-      "summary": "Auth token validation failing for 92% of requests",
-      "description": "Verifiers reject JWTs with 'unknown key id kid-2026-08'. Sessions issued before the last auth rollout still validate; new ones do not."
+      "summary": "auth token validation failure ratio above 50% for 5 minutes",
+      "description": "92% of POST /api/auth/verify requests return 401, baseline 0.1%. Callers on checkout, orders, and inventory all affected."
     },
     "fingerprint": "fp-auth-key-rotation-001"
   },

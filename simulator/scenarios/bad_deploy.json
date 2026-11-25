@@ -8,8 +8,8 @@
       "scenario": "bad_deploy"
     },
     "annotations": {
-      "summary": "Checkout 5xx error rate above 8% for 5 minutes",
-      "description": "HTTP 500s from POST /api/checkout/pay spiked from 0.2% to 8.4%. Errors mention 'payment intent state invalid'."
+      "summary": "checkout 5xx ratio above 5% for 5 minutes",
+      "description": "5xx ratio on POST /api/checkout/pay is 8.4% over the last 5 minutes, baseline 0.2%. Firing on 6 of 6 checkout pods."
     },
     "fingerprint": "fp-bad-deploy-001"
   },

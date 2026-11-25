@@ -8,8 +8,8 @@
       "scenario": "partial_revert"
     },
     "annotations": {
-      "summary": "Checkout payment failure rate above 6% for 5 minutes",
-      "description": "POST /api/checkout/pay returns 'price mismatch between quote and charge' for 6.3% of attempts. A revert of the dynamic pricing rollout is merged on main but has not been deployed."
+      "summary": "checkout payment failure ratio above 5% for 5 minutes",
+      "description": "6.3% of POST /api/checkout/pay attempts fail with HTTP 422, baseline 0.4%. Firing on 6 of 6 checkout pods."
     },
     "fingerprint": "fp-partial-revert-001"
   },

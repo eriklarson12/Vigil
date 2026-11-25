@@ -8,8 +8,8 @@
       "scenario": "memory_leak"
     },
     "annotations": {
-      "summary": "Inventory pods above 90% memory, restarting every ~6h",
-      "description": "RSS grows linearly since yesterday's release; OOMKilled twice overnight. Heap dominated by SKU lookup cache entries."
+      "summary": "inventory pod memory above 90% of limit for 15 minutes",
+      "description": "Working set on inventory pods is 1.85 GiB of a 2 GiB limit, growing about 70 MiB per hour for 26 hours. 2 OOMKilled restarts in the last 12 hours."
     },
     "fingerprint": "fp-memory-leak-001"
   },

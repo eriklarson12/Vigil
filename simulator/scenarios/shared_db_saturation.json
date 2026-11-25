@@ -8,8 +8,8 @@
       "scenario": "shared_db_saturation"
     },
     "annotations": {
-      "summary": "payments-db connection pool at 100% for 4 minutes",
-      "description": "Clients wait 8s+ for a connection and time out with 'pool exhausted, 0 idle'. Checkout and orders both report downstream 5xx."
+      "summary": "payments-db connections at 100% of max for 4 minutes",
+      "description": "Connection acquire wait p99 is 8.2s, baseline 5ms, with 0 idle connections. Downstream 5xx ratio is 7% on checkout and 5% on orders."
     },
     "fingerprint": "fp-shared-db-saturation-001"
   },

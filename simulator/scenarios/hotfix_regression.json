@@ -8,8 +8,8 @@
       "scenario": "hotfix_regression"
     },
     "annotations": {
-      "summary": "Orders read queries timing out for 11% of requests",
-      "description": "GET /api/orders returns 504 after 30s. Postgres shows long-running SELECTs holding connections; statement_timeout no longer cancels them."
+      "summary": "orders read request timeouts above 5% for 5 minutes",
+      "description": "11% of GET /api/orders requests return 504 at the 30s gateway timeout, baseline 0%. Active database connections from orders at 48 of 50."
     },
     "fingerprint": "fp-hotfix-regression-001"
   },

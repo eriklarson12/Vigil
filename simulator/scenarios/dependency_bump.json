@@ -8,8 +8,8 @@
       "scenario": "dependency_bump"
     },
     "annotations": {
-      "summary": "Orders p95 latency doubled to 900ms",
-      "description": "Upstream calls from orders to inventory take 2x longer since this morning; connection pool reuse appears broken after an HTTP client upgrade."
+      "summary": "orders p95 latency above 750ms for 15 minutes",
+      "description": "p95 on GET /api/orders is 900ms, baseline 450ms. Outbound request duration from orders to inventory p95 is 610ms, baseline 300ms."
     },
     "fingerprint": "fp-dependency-bump-001"
   },
