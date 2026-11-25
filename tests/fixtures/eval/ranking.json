@@ -1,7 +1,8 @@
 {
   "model": "gemini-3.6-flash",
   "dates": [
-    "2026-11-24"
+    "2026-11-24",
+    "2026-11-25"
   ],
   "runs_per_scenario": 3,
   "temperature": 0.2,
@@ -11,16 +12,16 @@
   "summary": {
     "positive_scenarios": 9,
     "heuristic_top1_correct": 9,
-    "model_top1_correct_runs": 16,
-    "model_top1_runs": 19,
+    "model_top1_correct_runs": 24,
+    "model_top1_runs": 27,
     "negative_scenarios": 2,
     "negative_gated": 1,
     "heuristic_false_culprits": 1,
     "model_false_culprit_runs": 3,
     "model_negative_runs": 3,
     "scenarios_called": 10,
-    "scenarios_unanimous": 7,
-    "errored_runs": 8,
+    "scenarios_unanimous": 10,
+    "errored_runs": 0,
     "invented_verdicts": 0
   },
   "scenarios": {
@@ -757,12 +758,58 @@
           }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_named": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_confidence": 0.98,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+                "rank": 1,
+                "confidence": 0.98,
+                "rationale": "Commit 2ea16a2e6e replaced a bounded LRUCache(maxsize=10_000) with an unbounded Python dictionary `_cache: dict[str, SkuRecord] = {}` in services/inventory/cache.py. Without eviction logic, every SKU lookup inserts items into memory indefinitely, causing the observed ~70 MiB/hr memory leak and OOMKilled restarts in the inventory service.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
+                "rank": 2,
+                "confidence": 0.01,
+                "rationale": "Commit 634efe3656 only modifies CI workflow configuration in .github/workflows/ci.yml. It has no impact on application runtime code or memory consumption in the inventory service.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+            "no_culprit_reason": null
+          }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_named": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "In services/inventory/cache.py, this commit replaced a bounded LRUCache(maxsize=10_000) with an unbounded dictionary _cache: dict[str, SkuRecord] = {}. As new SKUs are requested, get_sku() populates the dictionary without any eviction mechanism, causing steady memory growth. This directly accounts for the ~70 MiB/hr memory increase and OOMKilled restarts in the inventory service over the 26-hour timeline.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "This commit only updates CI workflow settings in .github/workflows/ci.yml and has no impact on runtime application code or memory management in the inventory service.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+            "no_culprit_reason": null
+          }
         }
       ]
     },
@@ -776,16 +823,106 @@
       "prompt_sha256": "d73ad332bbb6dd13",
       "runs": [
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py via `dynamic_price(cart, customer)`, recomputing price at charge time. As noted in commit 8957606ede, quotes and charges disagree under load, causing POST /api/checkout/pay to fail with HTTP 422 validation errors.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.45,
+                "rationale": "Commit 8957606ede reverted 02c238690b in services/checkout/pricing.py at 11:35:59. If deployed around 12:00:00, removing dynamic pricing while active user sessions contained dynamic quotes may have triggered HTTP 422 errors due to price mismatch during checkout.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only modifies CI cache keys in .github/workflows/ci.yml and has no relationship to checkout service logic or 422 payment failures.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py line 2 ('return dynamic_price(cart, customer) # recomputed again at charge time'). Recomputing pricing dynamically at charge time causes price mismatches between checkout quotes and charge validation, leading to HTTP 422 Unprocessable Entity errors during POST /api/checkout/pay.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.75,
+                "rationale": "Commit 8957606ede attempted to revert 02c238690b in services/checkout/pricing.py right before the incident started at 12:00:00. Restoring catalog_price(cart) while user sessions still held dynamic pricing quotes issued between 09:30 and 11:35 caused ongoing HTTP 422 validation failures on POST /api/checkout/pay.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only modifies CI workflow options in .github/workflows/ci.yml and has no relation to checkout payment processing or HTTP 422 errors.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py with recalculations at charge time. This dynamic price re-computation causes price discrepancies between initial quotes and final charges under load, directly triggering HTTP 422 validation failures on POST /api/checkout/pay.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.3,
+                "rationale": "Commit 8957606ede in services/checkout/pricing.py is a revert of 02c238690b attempting to address the quote/charge mismatch issue. It is less likely to be the root cause of the failures compared to the feature commit itself, though deployment verification is recommended.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only updates CI workflow cache options in .github/workflows/ci.yml and has no impact on application runtime code or payment processing.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
         }
       ]
     },
@@ -799,16 +936,106 @@
       "prompt_sha256": "f79611ef1a57d473",
       "runs": [
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.94,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.94,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml, increasing max_connections from 40 to 180 and statement_timeout from 5s to 60s, while introducing unindexed heavy reporting queries in db/reporting.sql. Extending the statement timeout to 60s allowed slow queries to hold database connections open significantly longer, quickly consuming all available pool connections and causing the ConnectionPoolExhausted alert along with downstream 5xx errors on checkout and orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds test cases in db/tests/test_pool.py. Test files do not run in production and cannot account for connection pool exhaustion on payments-db.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.02,
+                "rationale": "Commit 465b65d374 only updates Grafana dashboard definitions in deploy/grafana/payments.json. Visual dashboard metric updates do not alter database query behavior or connection pool settings.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml, increasing statement_timeout from 5s to 60s and max_connections from 40 to 180, alongside introducing heavy on-demand reporting queries in db/reporting.sql. Raising the statement timeout allowed long-running reporting queries to hold connections for up to 60 seconds, rapidly exhausting all available pool connections and causing the p99 acquire wait to reach 8.2s.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds test code in db/tests/test_pool.py. Test files do not run in production and cannot cause connection pool exhaustion in payments-db.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 465b65d374 only updates Grafana dashboard configurations in deploy/grafana/payments.json. Dashboard key updates do not affect runtime connection pool behaviour or statement timeouts.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
         },
         {
-          "date": "2026-11-24",
-          "error": "LLMUnavailable: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/r"
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml by increasing max_connections from 40 to 180 and statement_timeout from 5s to 60s to support heavy reporting queries introduced in db/reporting.sql. The 60-second timeout allows slow reporting queries to hold connection slots for an extended period, exhausting the pool and causing checkout and order queries to wait 8.2s p99 for connections.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds unit test code in db/tests/test_pool.py. Test code changes do not affect production database connection settings or active pool management.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 465b65d374 updates Grafana dashboard configurations in deploy/grafana/payments.json. Dashboard metric updates have no runtime effect on production database connection pools.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
         }
       ]
     }

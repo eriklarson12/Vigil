@@ -3,22 +3,22 @@
     {
       "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
       "rank": 1,
-      "confidence": 0.84,
-      "rationale": "db/pool.yaml raises max_connections 40 to 180 and statement_timeout 5s to 60s (@@ -8,2 +8,2), and db/reporting.sql adds an on-demand revenue rollup joining orders to payments. Long reporting queries can now hold connections for a minute instead of being cancelled at 5s, which drains the pool and produces the 'pool exhausted, 0 idle' waits. It shipped 25 minutes before the alert.",
-      "suggested_action": "rollback_deploy"
+      "confidence": 0.94,
+      "rationale": "Commit 40b61e74bd modified db/pool.yaml, increasing max_connections from 40 to 180 and statement_timeout from 5s to 60s, while introducing unindexed heavy reporting queries in db/reporting.sql. Extending the statement timeout to 60s allowed slow queries to hold database connections open significantly longer, quickly consuming all available pool connections and causing the ConnectionPoolExhausted alert along with downstream 5xx errors on checkout and orders.",
+      "suggested_action": "revert"
     },
     {
       "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
       "rank": 2,
-      "confidence": 0.06,
-      "rationale": "Adds pool acquisition tests under db/tests/; test-only and 18 hours old, so it does not run in production.",
+      "confidence": 0.05,
+      "rationale": "Commit 8c26466d1e only adds test cases in db/tests/test_pool.py. Test files do not run in production and cannot account for connection pool exhaustion on payments-db.",
       "suggested_action": "investigate"
     },
     {
       "sha": "465b65d37414516849611097a85567de69e9df44",
       "rank": 3,
       "confidence": 0.02,
-      "rationale": "Grafana dashboard JSON only; changes visualization, not database behaviour.",
+      "rationale": "Commit 465b65d374 only updates Grafana dashboard definitions in deploy/grafana/payments.json. Visual dashboard metric updates do not alter database query behavior or connection pool settings.",
       "suggested_action": "investigate"
     }
   ],
