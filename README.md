@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-444%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-463%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -37,7 +37,7 @@ The first ten minutes of an incident go to gathering context: what changed, who 
 - **The postmortem writes itself.** Resolving an incident, in Slack or over the API, starts a second graph that reads the timeline the pipeline already recorded and posts a blameless write-up in the brief's own thread.
 - **Action items become issues, exactly once.** Each postmortem action item is filed as a labeled GitHub issue. Filing runs after the postmortem graph, so the resume tick can finish a run a killed container left behind. Each URL is stored the moment it exists, and a hidden marker in every issue body lets a retry adopt an issue whose URL never reached Postgres instead of filing it twice.
 - **Detection feeds the same pipeline as alerts.** With `ANOMALY_DETECTION=on`, each resume tick runs a z-score check over per-service rpm and error-rate series: a 3 hour baseline, and three consecutive points above 3 sigma. A hit becomes an Alertmanager-shaped `AnomalyDetected` alert that goes through the webhook's own ingest function, so dedup, grouping, triage, and the brief are unchanged. The alert's start time is the first point of the anomalous run, so the next tick over the same spike dedups instead of paging again. No model call is involved.
-- **Hybrid retrieval, because runbooks are full of identifiers.** Runbook text is dense with exact strings such as service names, error codes, and table names, where lexical search beats embeddings. Vector and full-text results are fused with RRF and boosted when the runbook is tagged for the failing service.
+- **Retrieval starts from the link the alert already carries.** When an alert's `runbook_url` names a known runbook, that runbook leads the brief without a search. The remaining slots come from vector and full-text results fused with RRF, boosted when the runbook is tagged for the failing service. On the eleven scenarios the fusion ties either arm alone, and the [ablation](#retrieval-quality) says so.
 - **Postgres is the queue.** `FOR UPDATE SKIP LOCKED` with a stale-claim reclaim after 10 minutes handles dozens of alerts a day without Kafka, Celery, or Redis. The same database holds vectors, checkpoints, and the LLM budget, so the entire system is one managed dependency.
 - **Scale-to-zero survives mid-incident death.** A GitHub Actions cron POSTs `/internal/resume` every 15 minutes; the request itself wakes the container, and the tick reclaims stranded triage runs, resumes checkpointed graphs, generates missing postmortems, and prunes old rows to stay inside the 0.5 GB free tier.
 - **Eleven scenarios, entirely offline.** `vigil-sim` fires Alertmanager-format alerts with planted culprits, so the whole pipeline is demonstrable and regression-testable with no API key, no network, and no live model calls.
@@ -231,10 +231,10 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 311 unit tests, plus suites that need the database container
+# Backend: 324 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 60 tests against real Postgres, incl. the full pipeline
-uv run pytest -m retrieval_live   # 5 retrieval-quality tests against recorded embeddings
+uv run pytest -m integration      # 65 tests against real Postgres, incl. the full pipeline
+uv run pytest -m retrieval_live   # 6 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
 # Dashboard: 68 tests
@@ -306,6 +306,19 @@ Two gates run at the production fetch depth across all eleven scenarios: `hit@3`
 | `rank@1` | 9/11 | **10/11** |
 
 The scenario alerts are written the way an Alertmanager rule would template them: a metric, a threshold, a duration, and the route or pod affected. They never name a changed file, a config key, a deploy, or a cause, and `tests/unit/test_scenario_hygiene.py` fails the build if one does. Before that rewrite on 2026-11-24, several annotations stated the diagnosis outright and `rank@1` was 11/11. Since it, `dependency_bump` ranks its runbook second, behind `orders-database`.
+
+The same test prints both numbers for each arm alone, for the fusion without the tag boost, and for production. Only the production row is gated.
+
+| Configuration | `hit@3` | `rank@1` | Not ranked first |
+|---|---|---|---|
+| Vector only | 11/11 | 10/11 | `dependency_bump` (3rd) |
+| Keyword only | 11/11 | 10/11 | `partial_revert` (2nd) |
+| Hybrid (RRF) | 11/11 | 10/11 | `dependency_bump` (2nd) |
+| Hybrid + tag boost (production) | 11/11 | 10/11 | `dependency_bump` (2nd) |
+
+Hybrid does not beat vector-only here. The arms miss different scenarios: the fusion gets `partial_revert` right where the keyword arm alone does not, and lifts `dependency_bump` from third to second, but neither headline number moves. The tag boost changes nothing, because five of the seven runbooks are tagged `checkout`. Eleven queries over seven runbooks cannot separate these configurations. They show the fusion costs nothing on this corpus. They do not show it helps.
+
+Alertmanager rules usually carry a `runbook_url` annotation, and on a corpus this small that link does more than any ranking. When its last path segment equals a runbook slug, that runbook's chunk nearest the query is pinned first with `source: "annotation"`, and retrieval fills the other slots under the same cap of 4 chunks from 2 runbooks. A missing or unknown URL changes nothing. `cert_expiry` carries one. The tables above score retrieval alone, so the pin does not count toward them.
 
 Reproduce with `docker compose up -d db && uv run pytest -m retrieval_live -s`, which prints the ranked runbooks per scenario.
 
