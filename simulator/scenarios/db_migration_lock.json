@@ -8,8 +8,8 @@
       "scenario": "db_migration_lock"
     },
     "annotations": {
-      "summary": "Orders p99 query latency above 4s; lock waits climbing",
-      "description": "pg_stat_activity shows ACCESS EXCLUSIVE lock on orders table held by a CREATE INDEX statement; order list queries queueing behind it."
+      "summary": "orders p99 query latency above 2s for 5 minutes",
+      "description": "p99 query latency on the orders database is 4.3s, baseline 40ms. GET /api/orders p99 is 4.6s."
     },
     "fingerprint": "fp-migration-lock-001"
   },

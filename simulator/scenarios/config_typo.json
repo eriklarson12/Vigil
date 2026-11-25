@@ -8,8 +8,8 @@
       "scenario": "config_typo"
     },
     "annotations": {
-      "summary": "checkout pods crash-looping after config rollout",
-      "description": "Container exits with 'invalid literal for int(): 30s' while parsing db_pool_timeout from config/checkout.yaml."
+      "summary": "checkout pods in CrashLoopBackOff for 5 minutes",
+      "description": "0 of 6 checkout pods ready. Containers exit with code 1 within 2s of start; 14 restarts in the last 5 minutes."
     },
     "fingerprint": "fp-config-typo-001"
   },

@@ -8,8 +8,8 @@
       "scenario": "cert_expiry"
     },
     "annotations": {
-      "summary": "TLS handshake failures on checkout ingress",
-      "description": "Clients report certificate validation errors: 'certificate has expired'. No recent deploys to checkout."
+      "summary": "checkout ingress TLS handshake failure ratio above 50% for 3 minutes",
+      "description": "97% of TLS handshakes on the checkout ingress fail, baseline under 0.1%. All client routes affected; upstream pods report healthy."
     },
     "fingerprint": "fp-cert-expiry-001"
   },

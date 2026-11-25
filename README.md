@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-408%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-434%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -229,7 +229,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 279 unit tests, plus suites that need the database container
+# Backend: 305 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
 uv run pytest -m integration      # 56 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 5 retrieval-quality tests against recorded embeddings
@@ -282,7 +282,9 @@ Two gates run at the production fetch depth across all eleven scenarios: `hit@3`
 | Metric | Gate | Current |
 |---|---|---|
 | `hit@3` | 10/11 | **11/11** |
-| `rank@1` | 9/11 | **11/11** |
+| `rank@1` | 9/11 | **10/11** |
+
+The scenario alerts are written the way an Alertmanager rule would template them: a metric, a threshold, a duration, and the route or pod affected. They never name a changed file, a config key, a deploy, or a cause, and `tests/unit/test_scenario_hygiene.py` fails the build if one does. Before that rewrite on 2026-11-24, several annotations stated the diagnosis outright and `rank@1` was 11/11. Since it, `dependency_bump` ranks its runbook second, behind `orders-database`.
 
 Reproduce with `docker compose up -d db && uv run pytest -m retrieval_live -s`, which prints the ranked runbooks per scenario.
 
