@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from psycopg.rows import dict_row
 
 from vigil.impact.anomaly import METRICS
+from vigil.llm.budget import QUOTA_DAY
 
 router = APIRouter(prefix="/api")
 
@@ -86,7 +87,7 @@ def _jsonable(row: dict[str, Any]) -> dict[str, Any]:
 # the daily budget stays in Settings.
 LLM_CALL_CEILING = 3
 
-STATS_SQL = """
+STATS_SQL = f"""
 WITH durations AS (
     SELECT i.id, i.severity, i.status,
            date_trunc('week', i.created_at) AS week,
@@ -174,7 +175,7 @@ SELECT json_build_object(
             'culprit_named',  count(culprit),
             'scored_p50',     percentile_disc(0.5) WITHIN GROUP (ORDER BY scored),
             'chunks_p50',     percentile_disc(0.5) WITHIN GROUP (ORDER BY chunks),
-            'degraded',       count(*) FILTER (WHERE errors <> '{}'::jsonb),
+            'degraded',       count(*) FILTER (WHERE errors <> '{{}}'::jsonb),
             'degraded_nodes', COALESCE(
                 (SELECT json_agg(json_build_object('node', node, 'count', count)
                                  ORDER BY count DESC, node)
@@ -187,7 +188,7 @@ SELECT json_build_object(
             'total_mean',   round(avg(total_calls), 2),
             'total_max',    max(total_calls),
             'over_ceiling', count(*) FILTER (WHERE total_calls > %s),
-            'today_used',   (SELECT calls_used FROM llm_budget WHERE day = CURRENT_DATE)
+            'today_used',   (SELECT calls_used FROM llm_budget WHERE day = {QUOTA_DAY})
         ) FROM spend
     )
 ) AS stats

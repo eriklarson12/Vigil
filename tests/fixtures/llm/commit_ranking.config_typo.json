@@ -3,15 +3,15 @@
     {
       "sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
       "rank": 1,
-      "confidence": 0.93,
-      "rationale": "config/checkout.yaml line 22 changes db_pool_timeout from 30 to '30s' \u2014 the crash log reads \"invalid literal for int(): 30s\" while parsing db_pool_timeout, a one-to-one match. The config rolled out 25 minutes before the CrashLoopBackOff began.",
-      "suggested_action": "config_fix"
+      "confidence": 0.95,
+      "rationale": "Commit c5181f9a3c modified config/checkout.yaml by changing db_pool_timeout from 30 to 30s. If the checkout service configuration loader expects a numeric value for db_pool_timeout, passing a string '30s' will cause a config validation error or type parsing failure during initialization, leading containers to immediately exit with code 1 within 2s of start.",
+      "suggested_action": "revert"
     },
     {
       "sha": "e325b7b53e50a6cd9242c6eea78376417f83a81d",
       "rank": 2,
       "confidence": 0.1,
-      "rationale": "libs/logging.py refactor is shared code, but the crash is a config parse error, not a logging failure.",
+      "rationale": "Commit e325b7b53e modified libs/logging.py 7 hours prior to the incident. The diff updates logging step markers and metric tags in a shared logging library and shows no obvious fatal syntax or startup errors that would crash checkout pods.",
       "suggested_action": "investigate"
     }
   ],

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-434%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-444%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -151,15 +151,17 @@ uv run vigil-sim demo --scenario shared_db_saturation
 | `shared_db_saturation` | ConnectionPoolExhausted, payments-db, SEV1 | statement timeout raised to 60s | blast radius through a shared dependency |
 | `auth_key_rotation` | TokenValidationFailures, auth, SEV3 | JWKS rotation that drops the old key | internal service, user-facing fan-out |
 | `cert_expiry` | TLSHandshakeErrors, checkout, SEV1 | **none exists** | the honest "no culprit found" path |
-| `ambiguous_latency` | LatencyBudgetBurn, checkout, SEV2 | **three plausible, none proven** | declining to name a culprit |
+| `ambiguous_latency` | LatencyBudgetBurn, checkout, SEV2 | **three plausible, none proven** | a measured false culprit (see Evaluation) |
 
 The last five are where the design shows. `partial_revert` ranks an older commit above the fresher
 one on top of it, because that fresher one is a `Revert` naming it, merged but never deployed.
 `shared_db_saturation` and `auth_key_rotation` alert on services no user touches and still page
 correctly, naming the user-facing dependents from the service graph. `cert_expiry` and
-`ambiguous_latency` are the negative cases: neither yields a culprit, and the brief says so, keeps
-every rationale, and cites a runbook rather than inventing a root cause. A 0.4 confidence floor
-backstops the model when it is surer than it should be.
+`ambiguous_latency` are the negative cases. In `cert_expiry` no commit clears the scorer's floor,
+so the model is never asked, and the brief says no culprit was found and cites a runbook.
+`ambiguous_latency` is where Vigil gets it wrong: the scorer cannot separate three candidates, and
+the live model names one at 0.85 confidence in every recorded run, well above the 0.4 floor meant
+to catch an overconfident answer. The demo replays that answer.
 
 ## Dashboard
 
@@ -191,7 +193,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 | `LLM_MODE` | | `auto` (default), `gemini`, or `fake` |
 | `GEMINI_MODEL` | | Generation model (default `gemini-3.6-flash`) |
 | `GEMINI_FALLBACK_MODEL` | | Used when the primary model's quota is exhausted (default `gemini-3.5-flash-lite`) |
-| `LLM_DAILY_BUDGET` | | Generation calls per day, hard stop (default `200`) |
+| `LLM_DAILY_BUDGET` | | Generation calls per Pacific day, hard stop (default `20`, the primary model's free-tier daily quota) |
 | `EMBEDDING_MODEL` | | Embedding model (default `gemini-embedding-001`) |
 | `EMBEDDING_DIMS` | | Matryoshka truncation width, L2-normalized in code (default `768`) |
 | `EMBEDDINGS_MODE` | | `auto` (default), `gemini`, or `fake` (deterministic hash vectors) |
@@ -229,9 +231,9 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 305 unit tests, plus suites that need the database container
+# Backend: 311 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
-uv run pytest -m integration      # 56 tests against real Postgres, incl. the full pipeline
+uv run pytest -m integration      # 60 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 5 retrieval-quality tests against recorded embeddings
 uv run ruff check .
 
@@ -272,6 +274,25 @@ Several suites exist for failures this system could otherwise hide:
 | `GET` | `/healthz` | Liveness check, and the request that wakes a scaled-to-zero container |
 
 </details>
+
+## Evaluation
+
+Commit ranking is measured against the live model, not the recorded responses CI replays. `scripts/eval_ranking.py` builds the production ranking prompt for each of the 11 synthetic scenarios (4 to 5 commits in the window each, of which the 2 or 3 that clear the heuristic floor reach the model) and sends it 3 times. Measured with `gemini-3.6-flash` on 2026-11-24 and 2026-11-25; the free tier's 20 requests a day split the 30 calls across both days.
+
+| | Heuristic only | Heuristic + model |
+|---|---|---|
+| Planted culprit named, 9 scenarios | 9/9 | 24/27 runs (8/9 scenarios) |
+| False culprit, 2 scenarios with none | 1/2 | 3/3 runs on the 1 that reaches the model |
+| Same answer in all 3 runs | n/a | 10/10 scenarios |
+
+What these numbers do and do not show:
+
+- The heuristic weights were written against these same scenarios, so 9/9 shows they fit them. It says nothing about real repositories.
+- The model sees each candidate's heuristic score. It agreed with the heuristic's first pick everywhere except `dependency_bump`, where it blamed a retry decorator in the orders HTTP client over the `httpx` upgrade, at 0.90 confidence in all 3 runs.
+- `cert_expiry` has no candidate above the floor, so no call is made. `ambiguous_latency` has no culprit either, and the model names the batching commit at 0.85 every run, so its demo brief blames that commit.
+- On this evidence the model adds a written rationale per commit, not accuracy. Every scenario was written by the author of the scorer.
+
+Reproduce with `./scripts/safe-run.sh --llm-live uv run python scripts/eval_ranking.py`, adding `--fill` on the next day to finish runs the daily quota cut off. Per-run answers and rationales are in `tests/fixtures/eval/ranking.json`.
 
 ## Retrieval quality
 

@@ -76,10 +76,17 @@ def test_every_ranking_fixture_names_a_scored_candidate():
             assert analysis.likely_culprit_sha in shas, f"{path.name}: culprit not in the repo"
 
 
-def test_ambiguous_latency_stays_under_the_confidence_floor():
-    """The scenario demos the confidence guard: ranked candidates, no named culprit."""
+def test_ambiguous_latency_recording_names_a_false_culprit():
+    """A measured failure, pinned so a re-record that changes it is noticed.
+
+    The scenario plants no culprit. Recorded live (scripts/eval_ranking.py), the model
+    names one above the confidence floor in every run, so the demo brief blames a commit.
+    If a re-record flips this, the README's evaluation numbers change with it. The guard
+    itself is tested on synthetic input in test_triage_guards.py.
+    """
+    assert planted_culprit("ambiguous_latency") is None
     path = FIXTURES / "commit_ranking.ambiguous_latency.json"
     analysis = CommitAnalysis.model_validate(json.loads(path.read_text(encoding="utf-8")))
-    assert analysis.likely_culprit_sha is None
-    assert analysis.no_culprit_reason
-    assert max(v.confidence for v in analysis.verdicts) < get_settings().confidence_floor
+    named = analysis.likely_culprit_sha
+    assert named is not None
+    assert max(v.confidence for v in analysis.verdicts if v.sha == named) >= get_settings().confidence_floor

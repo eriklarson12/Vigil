@@ -3,15 +3,15 @@
     {
       "sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
       "rank": 1,
-      "confidence": 0.9,
-      "rationale": "0042_add_customer_index.sql runs CREATE INDEX without CONCURRENTLY (line 2 of the diff), which takes an ACCESS EXCLUSIVE-conflicting lock on orders for the duration of the build \u2014 exactly the lock the alert reports queries queueing behind. It deployed 40 minutes before the alert.",
-      "suggested_action": "config_fix"
+      "confidence": 0.85,
+      "rationale": "Commit d770357e9b adds a non-concurrent database index in services/orders/migrations/0042_add_customer_index.sql ('CREATE INDEX orders_customer_id_idx ON orders (customer_id)'). Executing CREATE INDEX without CONCURRENTLY acquires a lock on the orders table, blocking incoming database queries and directly causing the reported 4.3s database query latency spike on GET /api/orders.",
+      "suggested_action": "revert"
     },
     {
       "sha": "ebabc59ebe5fd0eb13b93509652069d32c66c542",
       "rank": 2,
-      "confidence": 0.08,
-      "rationale": "Decimal rounding change in money.py cannot hold table locks or slow unrelated queries.",
+      "confidence": 0.2,
+      "rationale": "Commit ebabc59ebe updates money formatting in services/orders/money.py. Although it touches async cache fetching steps, it does not modify database schema or query patterns on the orders table to explain the 4.3s database query latency.",
       "suggested_action": "investigate"
     }
   ],

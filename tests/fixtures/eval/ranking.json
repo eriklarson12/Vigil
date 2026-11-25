@@ -1,0 +1,1043 @@
+{
+  "model": "gemini-3.6-flash",
+  "dates": [
+    "2026-11-24",
+    "2026-11-25"
+  ],
+  "runs_per_scenario": 3,
+  "temperature": 0.2,
+  "commit_score_floor": 0.15,
+  "commit_top_k": 3,
+  "confidence_floor": 0.4,
+  "summary": {
+    "positive_scenarios": 9,
+    "heuristic_top1_correct": 9,
+    "model_top1_correct_runs": 24,
+    "model_top1_runs": 27,
+    "negative_scenarios": 2,
+    "negative_gated": 1,
+    "heuristic_false_culprits": 1,
+    "model_false_culprit_runs": 3,
+    "model_negative_runs": 3,
+    "scenarios_called": 10,
+    "scenarios_unanimous": 10,
+    "errored_runs": 0,
+    "invented_verdicts": 0
+  },
+  "scenarios": {
+    "ambiguous_latency": {
+      "planted_culprit": null,
+      "commits_in_window": 4,
+      "candidates_shown": 3,
+      "heuristic_top1": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+      "heuristic_top1_score": 0.5531,
+      "gated": false,
+      "prompt_sha256": "92d542c8fd2be3ed",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_named": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "In libs/payments/batch.py, replacing parallel authorization calls (asyncio.gather(*[authorize(i) for i in items])) with an async Batcher context manager (async with Batcher(**settings.payments_batch)) introduces batch collection delays and request serialization on payment gateway calls. This directly explains the p99 latency burn on POST /api/checkout/pay rising to 2.4s while 5xx error rates remain baseline.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "0a2edd823315a992bf9de0f4f2c9789f00bee5af",
+                "rank": 2,
+                "confidence": 0.7,
+                "rationale": "In services/checkout/http.py, caching a single httpx.AsyncClient via @lru_cache def _shared_client() forces all checkout HTTP requests to share one client instance. Under high concurrency, default HTTP connection pool limits cause request queuing latency on outbound calls, contributing to elevated latency.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "ee1837c66ec26d15297a0bd52fc9320d34f52dd5",
+                "rank": 3,
+                "confidence": 0.3,
+                "rationale": "In deploy/checkout.yaml, increasing worker count from 8 to 16 could cause CPU context switching or resource contention, but is unlikely to be the primary cause of a 3x latency increase on POST /api/checkout/pay without causing errors.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_named": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 311fb6d473 in libs/payments/batch.py replaces concurrent execution via `asyncio.gather(*[authorize(i) for i in items])` with `Batcher(**settings.payments_batch)`. Batching introduces wait windows and serialization overhead for payment gateway calls, directly explaining the p99 latency jump to 2.4s on POST /api/checkout/pay.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "0a2edd823315a992bf9de0f4f2c9789f00bee5af",
+                "rank": 2,
+                "confidence": 0.5,
+                "rationale": "Commit 0a2edd8233 in services/checkout/http.py reuses a single `httpx.AsyncClient` via `@lru_cache`. Sharing a single AsyncClient across requests could cause connection pool contention or event-loop binding issues, though it is less directly tied to payment processing delays than the batching change.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "ee1837c66ec26d15297a0bd52fc9320d34f52dd5",
+                "rank": 3,
+                "confidence": 0.3,
+                "rationale": "Commit ee1837c66e in deploy/checkout.yaml increases checkout worker count from 8 to 16. Higher worker concurrency usually improves or maintains latency unless downstream dependencies are resource-constrained.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_named": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 311fb6d473 in libs/payments/batch.py removed parallel execution via asyncio.gather(*[authorize(i) for i in items]) and replaced it with a Batcher context manager. Batching payment gateway calls per cart introduces batch window delays and sequential processing overhead during checkout, directly causing p99 latency on POST /api/checkout/pay to jump from 780ms to 2.4s while keeping error rates low (0.3%).",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "0a2edd823315a992bf9de0f4f2c9789f00bee5af",
+                "rank": 2,
+                "confidence": 0.65,
+                "rationale": "Commit 0a2edd8233 refactored services/checkout/http.py to reuse a shared httpx.AsyncClient via @lru_cache _shared_client(). Sharing an AsyncClient without proper pool sizing or lifecycle management can lead to connection pool contention and request queuing, contributing to latency spikes.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "ee1837c66ec26d15297a0bd52fc9320d34f52dd5",
+                "rank": 3,
+                "confidence": 0.35,
+                "rationale": "Commit ee1837c66e modified deploy/checkout.yaml to increase worker count from 8 to 16. While increasing concurrency can increase downstream lock contention, it is unlikely to be the primary cause of targeted payment latency degradation.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "311fb6d4735ff5a6a0a7118872bcf6be80c10521",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "auth_key_rotation": {
+      "planted_culprit": "ebe49dee5046845477a942d2a40b72b8919588ff",
+      "commits_in_window": 4,
+      "candidates_shown": 2,
+      "heuristic_top1": "ebe49dee5046845477a942d2a40b72b8919588ff",
+      "heuristic_top1_score": 0.6064,
+      "gated": false,
+      "prompt_sha256": "4919ae610b9f2842",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_named": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit ebe49dee50 rotated the active JWT key to kid-2026-08 and dropped the previous key (kid-2026-02) from config/auth/jwks.json and services/auth/keys.py. Dropping the old key invalidates all active sessions/tokens issued prior to rotation, directly causing POST /api/auth/verify to return 401 for 92% of requests across callers.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "11788010d39d234ae4571051e044a72580ec3e77",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit 11788010d3 modifies cache warmup logic in services/auth/cache.py and was committed 4 hours prior to the incident. There is no evidence connecting cache warmup retries to 401 token validation failures.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_named": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit ebe49dee50 rotated the JWT signing key to 'kid-2026-08' and completely removed the previous key ('kid-2026-02') from config/auth/jwks.json and services/auth/keys.py. Existing tokens in circulation signed with the old key can no longer be validated, directly causing 92% of POST /api/auth/verify requests to fail with 401 HTTP errors.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "11788010d39d234ae4571051e044a72580ec3e77",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit 11788010d3 only modifies auth cache fetching and telemetry steps in services/auth/cache.py. It does not affect token verification logic or JWKS signing keys.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_named": "ebe49dee5046845477a942d2a40b72b8919588ff",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit ebe49dee50 rotated the active JWT signing key to 'kid-2026-08' and dropped the previous key from the JWKS set in config/auth/jwks.json and services/auth/keys.py. Dropping the previous key immediately invalidates all existing active user tokens, causing 92% of POST /api/auth/verify requests from caller services to return 401 Unauthorized.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "11788010d39d234ae4571051e044a72580ec3e77",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit 11788010d3 only modifies cold-start cache warmup fetching logic in services/auth/cache.py and was committed 4 hours prior to the incident without causing signature validation failures.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "ebe49dee5046845477a942d2a40b72b8919588ff",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "bad_deploy": {
+      "planted_culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+      "commits_in_window": 5,
+      "candidates_shown": 2,
+      "heuristic_top1": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+      "heuristic_top1_score": 0.7257,
+      "gated": false,
+      "prompt_sha256": "c2ce4226ea3bbd40",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_named": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_confidence": 0.88,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+                "rank": 1,
+                "confidence": 0.88,
+                "rationale": "Commit 71cd87314d refactored services/checkout/handlers/payment.py, removing explicit intent validation and confirmation logic (if intent.state != IntentState.REQUIRES_CONFIRMATION). This directly alters the execution flow for payment processing on POST /api/checkout/pay, making it the primary suspect for the 8.4% 5xx error rate spike on checkout pods.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "520191a2fa06d48da80b227c9b8767681437b698",
+                "rank": 2,
+                "confidence": 0.35,
+                "rationale": "Commit 520191a2fa updated deployment manifest parameters in deploy/checkout.yaml. While it affects the checkout deployment config, it does not modify the code logic of POST /api/checkout/pay causing 5xx errors.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_named": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 71cd87314d modifies services/checkout/handlers/payment.py, which directly handles the POST /api/checkout/pay endpoint. The refactor removed intent state validation and gateway confirmation logic, which likely introduced a runtime failure causing 5xx server errors on payment requests.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "520191a2fa06d48da80b227c9b8767681437b698",
+                "rank": 2,
+                "confidence": 0.25,
+                "rationale": "Commit 520191a2fa modifies deploy/checkout.yaml by changing worker and replica counts. While capacity changes can impact service health, the alert specifically highlights 5xx errors on POST /api/checkout/pay across all 6 pods, pointing to an application logic fault in payment.py rather than a config issue.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_named": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 71cd87314d refactored services/checkout/handlers/payment.py right before the incident, removing core intent validation and confirmation logic. This directly impacts POST /api/checkout/pay and is the most plausible source of the 5xx errors.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "520191a2fa06d48da80b227c9b8767681437b698",
+                "rank": 2,
+                "confidence": 0.25,
+                "rationale": "Commit 520191a2fa modified deployment replica and worker configurations in deploy/checkout.yaml. While deployment changes can impact capacity, it is unlikely to be the primary cause of functional 5xx errors on the specific payment route.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "71cd87314d4ab16755b3b8f721372a5b1e1fdab1",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "cert_expiry": {
+      "planted_culprit": null,
+      "commits_in_window": 4,
+      "candidates_shown": 0,
+      "heuristic_top1": null,
+      "heuristic_top1_score": null,
+      "gated": true,
+      "prompt_sha256": null,
+      "runs": []
+    },
+    "config_typo": {
+      "planted_culprit": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+      "commits_in_window": 4,
+      "candidates_shown": 2,
+      "heuristic_top1": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+      "heuristic_top1_score": 0.5806,
+      "gated": false,
+      "prompt_sha256": "20f6b8622ae2aed9",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_named": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit c5181f9a3c modified config/checkout.yaml by changing db_pool_timeout from 30 to 30s. If the checkout service configuration loader expects a numeric value for db_pool_timeout, passing a string '30s' will cause a config validation error or type parsing failure during initialization, leading containers to immediately exit with code 1 within 2s of start.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "e325b7b53e50a6cd9242c6eea78376417f83a81d",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit e325b7b53e modified libs/logging.py 7 hours prior to the incident. The diff updates logging step markers and metric tags in a shared logging library and shows no obvious fatal syntax or startup errors that would crash checkout pods.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_named": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "In config/checkout.yaml, db_pool_timeout was modified from integer 30 to string 30s. If the checkout service configuration parser expects an integer/number for db_pool_timeout, this type mismatch causes an unhandled exception or parsing failure at startup, causing containers to exit with code 1 within 2 seconds.",
+                "suggested_action": "config_fix"
+              },
+              {
+                "sha": "e325b7b53e50a6cd9242c6eea78376417f83a81d",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Changes in libs/logging.py update logging and metric span identifiers. This commit occurred hours prior to the alert and does not alter configuration or initialization logic for the checkout service.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_named": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit c5181f9a3c modified config/checkout.yaml, changing db_pool_timeout from integer 30 to string '30s'. If the checkout service configuration loader expects a numeric value, this type mismatch causes immediate startup/validation failure (exit code 1 within 2s of start), directly triggering the CrashLoopBackOff alert.",
+                "suggested_action": "config_fix"
+              },
+              {
+                "sha": "e325b7b53e50a6cd9242c6eea78376417f83a81d",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit e325b7b53e modifies logging code in libs/logging.py several hours before the incident and does not alter checkout service initialization or configuration parsing.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "c5181f9a3c8c4288fca1c068a709d8b4454c5508",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "db_migration_lock": {
+      "planted_culprit": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+      "commits_in_window": 4,
+      "candidates_shown": 2,
+      "heuristic_top1": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+      "heuristic_top1_score": 0.7134,
+      "gated": false,
+      "prompt_sha256": "53a4d64f3e7adef2",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_named": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit d770357e9b adds a non-concurrent database index in services/orders/migrations/0042_add_customer_index.sql ('CREATE INDEX orders_customer_id_idx ON orders (customer_id)'). Executing CREATE INDEX without CONCURRENTLY acquires a lock on the orders table, blocking incoming database queries and directly causing the reported 4.3s database query latency spike on GET /api/orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "ebabc59ebe5fd0eb13b93509652069d32c66c542",
+                "rank": 2,
+                "confidence": 0.2,
+                "rationale": "Commit ebabc59ebe updates money formatting in services/orders/money.py. Although it touches async cache fetching steps, it does not modify database schema or query patterns on the orders table to explain the 4.3s database query latency.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_named": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_confidence": 0.9,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+                "rank": 1,
+                "confidence": 0.9,
+                "rationale": "Commit d770357e9b added a non-concurrent index creation in services/orders/migrations/0042_add_customer_index.sql (CREATE INDEX orders_customer_id_idx ON orders (customer_id)). Executing DDL index creation without CONCURRENTLY locks the orders table, blocking writes and queueing reads, directly explaining the database query latency spike to 4.3s on GET /api/orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "ebabc59ebe5fd0eb13b93509652069d32c66c542",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit ebabc59ebe modifies in-memory Decimal rounding logic in services/orders/money.py. It does not introduce database schema locks or slow queries, making it highly unlikely to cause the database query latency spike.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_named": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+          "model_confidence": 0.9,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+                "rank": 1,
+                "confidence": 0.9,
+                "rationale": "Commit d770357e9b introduced migration services/orders/migrations/0042_add_customer_index.sql containing CREATE INDEX orders_customer_id_idx ON orders (customer_id) without CONCURRENTLY. In PostgreSQL, non-concurrent index creation acquires an ACCESS EXCLUSIVE lock on the orders table, blocking incoming database queries and directly causing the GET /api/orders p99 latency spike to 4.3s.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "ebabc59ebe5fd0eb13b93509652069d32c66c542",
+                "rank": 2,
+                "confidence": 0.15,
+                "rationale": "Commit ebabc59ebe modifies decimal quantization in services/orders/money.py. This is in-memory application logic for monetary calculations and does not execute heavy database queries or acquire database locks that would explain the 4.3s database query latency spike.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "d770357e9b476f15666924e3b15a34ad417c9cd7",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "dependency_bump": {
+      "planted_culprit": "abc1a46fb0b2961db54b1c84726a553e19218447",
+      "commits_in_window": 4,
+      "candidates_shown": 3,
+      "heuristic_top1": "abc1a46fb0b2961db54b1c84726a553e19218447",
+      "heuristic_top1_score": 0.478,
+      "gated": false,
+      "prompt_sha256": "32d9878538f4b248",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_named": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_confidence": 0.92,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+                "rank": 1,
+                "confidence": 0.92,
+                "rationale": "Commit 3c8bc9447b added `@retry(attempts=3, backoff=0.2)` to `services/orders/http_client.py`. Introducing 3 retry attempts with a 0.2s (200ms) backoff on HTTP client calls directly causes the observed increase in outbound request duration from orders to inventory (p95 increased from 300ms to 610ms), which in turn drives up GET /api/orders p95 latency.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "abc1a46fb0b2961db54b1c84726a553e19218447",
+                "rank": 2,
+                "confidence": 0.15,
+                "rationale": "Commit abc1a46fb0 updates the httpx dependency from 0.27 to 0.28 in `poetry.lock` and `pyproject.toml`. While HTTP client changes can affect network calls, there is no direct evidence of a performance regression in httpx compared to the added retry backoff loop.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "b9cb59ea6b3c4ceedbddd37fe112c0eb29fa3ff2",
+                "rank": 3,
+                "confidence": 0.01,
+                "rationale": "Commit b9cb59ea6b only adds test code in `services/orders/tests/e2e.py`. Test code does not execute in production endpoint request paths and cannot cause runtime API latency.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_named": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_confidence": 0.9,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+                "rank": 1,
+                "confidence": 0.9,
+                "rationale": "Commit 3c8bc9447b added @retry(attempts=3, backoff=0.2) in services/orders/http_client.py. The retry policy with a 200ms backoff directly causes outbound inventory requests to experience increased latency when retries occur, matching the alert details where outbound request duration to inventory jumped from 300ms to 610ms p95, driving overall endpoint latency to 900ms.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "abc1a46fb0b2961db54b1c84726a553e19218447",
+                "rank": 2,
+                "confidence": 0.2,
+                "rationale": "Commit abc1a46fb0 bumps httpx in poetry.lock and pyproject.toml. While httpx handles HTTP traffic, a library version bump is far less likely to introduce a specific 300ms delay overhead than explicit retry backoffs added in 3c8bc9447b.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "b9cb59ea6b3c4ceedbddd37fe112c0eb29fa3ff2",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit b9cb59ea6b adds end-to-end test cases in services/orders/tests/e2e.py. Test files do not run in production request handling paths and cannot cause runtime latency degradation.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_named": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+          "model_confidence": 0.9,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+                "rank": 1,
+                "confidence": 0.9,
+                "rationale": "Commit 3c8bc9447b adds `@retry(attempts=3, backoff=0.2)` in services/orders/http_client.py. Adding retries with a 200ms backoff on inventory fetch requests directly accounts for the outbound request latency increase from 300ms to 610ms between orders and inventory services, causing GET /api/orders p95 latency to spike to 900ms.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "abc1a46fb0b2961db54b1c84726a553e19218447",
+                "rank": 2,
+                "confidence": 0.15,
+                "rationale": "Commit abc1a46fb0 bumps httpx version in poetry.lock and pyproject.toml. Dependency updates can occasionally introduce performance regressions, but there is no specific evidence in the diff showing it causes the outbound request latency spike.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "b9cb59ea6b3c4ceedbddd37fe112c0eb29fa3ff2",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit b9cb59ea6b only adds test code to services/orders/tests/e2e.py. Test code does not execute within the production path of GET /api/orders and cannot be responsible for production latency.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "3c8bc9447b9006b737fbb646fca9051e6a92ae88",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "hotfix_regression": {
+      "planted_culprit": "edef73cc43a432dfe97a4866919c64e16d5715da",
+      "commits_in_window": 4,
+      "candidates_shown": 2,
+      "heuristic_top1": "edef73cc43a432dfe97a4866919c64e16d5715da",
+      "heuristic_top1_score": 0.6996,
+      "gated": false,
+      "prompt_sha256": "558a9ecd7ac540ed",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_named": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit edef73cc43 modified services/orders/db.py to set statement_timeout to '0' (disabled), removing the previous 5-second safety limit. Disabling the statement timeout allows slow or hanging queries to occupy database connections indefinitely, leading directly to connection pool exhaustion (48 of 50 active connections) and 30-second gateway 504 timeouts on GET /api/orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "433979218754288db33c622ef0140e54a28f8621",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit 4339792187 refactored services/orders/queries.py and services/orders/repo.py to separate query and command modules. The diff consists of structural reorganization and telemetry span additions, with no evidence of changing query performance or connection handling.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_named": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_confidence": 0.92,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+                "rank": 1,
+                "confidence": 0.92,
+                "rationale": "Commit edef73cc43 modified services/orders/db.py to set statement_timeout='0', disabling DB query timeouts. This allows slow database queries to run indefinitely and hold connections open, causing active DB connection exhaustion (48/50) and leading GET /api/orders requests to time out at the 30s gateway limit.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "433979218754288db33c622ef0140e54a28f8621",
+                "rank": 2,
+                "confidence": 0.15,
+                "rationale": "Commit 4339792187 refactored code across services/orders/queries.py and services/orders/repo.py. The diff contains standard refactoring and metrics collection without altering query execution limits or database connection behavior.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-24",
+          "culprit": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_named": "edef73cc43a432dfe97a4866919c64e16d5715da",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit edef73cc43 modified services/orders/db.py, replacing `SET statement_timeout = '5s'` with `SET statement_timeout = '0'`. Disabling statement timeouts allows long-running or stalled queries to hold database connections open indefinitely until hitting the gateway's 30s limit. This directly explains the 48/50 active DB connection pool exhaustion and the 504 gateway timeouts on GET /api/orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "433979218754288db33c622ef0140e54a28f8621",
+                "rank": 2,
+                "confidence": 0.1,
+                "rationale": "Commit 4339792187 refactored orders repository code across services/orders/queries.py and repo.py. The diff shows standard query/tracer logic movement without any obvious changes to query behavior or connection management.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "edef73cc43a432dfe97a4866919c64e16d5715da",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "memory_leak": {
+      "planted_culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+      "commits_in_window": 4,
+      "candidates_shown": 2,
+      "heuristic_top1": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+      "heuristic_top1_score": 0.3181,
+      "gated": false,
+      "prompt_sha256": "ff2f3e9a80174805",
+      "runs": [
+        {
+          "date": "2026-11-24",
+          "culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_named": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit 2ea16a2e6e replaced a bounded LRUCache (maxsize=10_000) with an unbounded dictionary _cache: dict[str, SkuRecord] in services/inventory/cache.py. Without eviction, every lookup stores new SKU entries indefinitely, directly causing the observed memory leak of ~70 MiB/hour and subsequent OOMKilled restarts on the inventory pods.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
+                "rank": 2,
+                "confidence": 0.01,
+                "rationale": "Commit 634efe3656 only modifies CI workflow options in .github/workflows/ci.yml. It has no effect on inventory service runtime behavior or memory consumption.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_named": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_confidence": 0.98,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+                "rank": 1,
+                "confidence": 0.98,
+                "rationale": "Commit 2ea16a2e6e replaced a bounded LRUCache(maxsize=10_000) with an unbounded Python dictionary `_cache: dict[str, SkuRecord] = {}` in services/inventory/cache.py. Without eviction logic, every SKU lookup inserts items into memory indefinitely, causing the observed ~70 MiB/hr memory leak and OOMKilled restarts in the inventory service.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
+                "rank": 2,
+                "confidence": 0.01,
+                "rationale": "Commit 634efe3656 only modifies CI workflow configuration in .github/workflows/ci.yml. It has no impact on application runtime code or memory consumption in the inventory service.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_named": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "In services/inventory/cache.py, this commit replaced a bounded LRUCache(maxsize=10_000) with an unbounded dictionary _cache: dict[str, SkuRecord] = {}. As new SKUs are requested, get_sku() populates the dictionary without any eviction mechanism, causing steady memory growth. This directly accounts for the ~70 MiB/hr memory increase and OOMKilled restarts in the inventory service over the 26-hour timeline.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "634efe365671358edaf7e87fe3edd7bdc0a17925",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "This commit only updates CI workflow settings in .github/workflows/ci.yml and has no impact on runtime application code or memory management in the inventory service.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "2ea16a2e6e24e16b14453485643fc413ca0dbbce",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "partial_revert": {
+      "planted_culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+      "commits_in_window": 5,
+      "candidates_shown": 3,
+      "heuristic_top1": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+      "heuristic_top1_score": 0.7159,
+      "gated": false,
+      "prompt_sha256": "d73ad332bbb6dd13",
+      "runs": [
+        {
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py via `dynamic_price(cart, customer)`, recomputing price at charge time. As noted in commit 8957606ede, quotes and charges disagree under load, causing POST /api/checkout/pay to fail with HTTP 422 validation errors.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.45,
+                "rationale": "Commit 8957606ede reverted 02c238690b in services/checkout/pricing.py at 11:35:59. If deployed around 12:00:00, removing dynamic pricing while active user sessions contained dynamic quotes may have triggered HTTP 422 errors due to price mismatch during checkout.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only modifies CI cache keys in .github/workflows/ci.yml and has no relationship to checkout service logic or 422 payment failures.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py line 2 ('return dynamic_price(cart, customer) # recomputed again at charge time'). Recomputing pricing dynamically at charge time causes price mismatches between checkout quotes and charge validation, leading to HTTP 422 Unprocessable Entity errors during POST /api/checkout/pay.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.75,
+                "rationale": "Commit 8957606ede attempted to revert 02c238690b in services/checkout/pricing.py right before the incident started at 12:00:00. Restoring catalog_price(cart) while user sessions still held dynamic pricing quotes issued between 09:30 and 11:35 caused ongoing HTTP 422 validation failures on POST /api/checkout/pay.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only modifies CI workflow options in .github/workflows/ci.yml and has no relation to checkout payment processing or HTTP 422 errors.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_named": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+          "model_confidence": 0.85,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+                "rank": 1,
+                "confidence": 0.85,
+                "rationale": "Commit 02c238690b introduced dynamic pricing in services/checkout/pricing.py with recalculations at charge time. This dynamic price re-computation causes price discrepancies between initial quotes and final charges under load, directly triggering HTTP 422 validation failures on POST /api/checkout/pay.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8957606ede71010d026d9abddb6407fd51b98043",
+                "rank": 2,
+                "confidence": 0.3,
+                "rationale": "Commit 8957606ede in services/checkout/pricing.py is a revert of 02c238690b attempting to address the quote/charge mismatch issue. It is less likely to be the root cause of the failures compared to the feature commit itself, though deployment verification is recommended.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "8d5e1ccf0205c2edc8ccefb4b33294bee1f2f5a4",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 8d5e1ccf02 only updates CI workflow cache options in .github/workflows/ci.yml and has no impact on application runtime code or payment processing.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "02c238690b53e2b3bf1568f979d9e00efcf48f95",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    },
+    "shared_db_saturation": {
+      "planted_culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+      "commits_in_window": 4,
+      "candidates_shown": 3,
+      "heuristic_top1": "40b61e74bd9509074be0bba465fe39b722fabe23",
+      "heuristic_top1_score": 0.8094,
+      "gated": false,
+      "prompt_sha256": "f79611ef1a57d473",
+      "runs": [
+        {
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.94,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.94,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml, increasing max_connections from 40 to 180 and statement_timeout from 5s to 60s, while introducing unindexed heavy reporting queries in db/reporting.sql. Extending the statement timeout to 60s allowed slow queries to hold database connections open significantly longer, quickly consuming all available pool connections and causing the ConnectionPoolExhausted alert along with downstream 5xx errors on checkout and orders.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds test cases in db/tests/test_pool.py. Test files do not run in production and cannot account for connection pool exhaustion on payments-db.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.02,
+                "rationale": "Commit 465b65d374 only updates Grafana dashboard definitions in deploy/grafana/payments.json. Visual dashboard metric updates do not alter database query behavior or connection pool settings.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml, increasing statement_timeout from 5s to 60s and max_connections from 40 to 180, alongside introducing heavy on-demand reporting queries in db/reporting.sql. Raising the statement timeout allowed long-running reporting queries to hold connections for up to 60 seconds, rapidly exhausting all available pool connections and causing the p99 acquire wait to reach 8.2s.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds test code in db/tests/test_pool.py. Test files do not run in production and cannot cause connection pool exhaustion in payments-db.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 465b65d374 only updates Grafana dashboard configurations in deploy/grafana/payments.json. Dashboard key updates do not affect runtime connection pool behaviour or statement timeouts.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
+        },
+        {
+          "date": "2026-11-25",
+          "culprit": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_named": "40b61e74bd9509074be0bba465fe39b722fabe23",
+          "model_confidence": 0.95,
+          "invented_verdicts": 0,
+          "analysis": {
+            "verdicts": [
+              {
+                "sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+                "rank": 1,
+                "confidence": 0.95,
+                "rationale": "Commit 40b61e74bd modified db/pool.yaml by increasing max_connections from 40 to 180 and statement_timeout from 5s to 60s to support heavy reporting queries introduced in db/reporting.sql. The 60-second timeout allows slow reporting queries to hold connection slots for an extended period, exhausting the pool and causing checkout and order queries to wait 8.2s p99 for connections.",
+                "suggested_action": "revert"
+              },
+              {
+                "sha": "8c26466d1e941508c8a419c16945fa75beec2196",
+                "rank": 2,
+                "confidence": 0.05,
+                "rationale": "Commit 8c26466d1e only adds unit test code in db/tests/test_pool.py. Test code changes do not affect production database connection settings or active pool management.",
+                "suggested_action": "investigate"
+              },
+              {
+                "sha": "465b65d37414516849611097a85567de69e9df44",
+                "rank": 3,
+                "confidence": 0.05,
+                "rationale": "Commit 465b65d374 updates Grafana dashboard configurations in deploy/grafana/payments.json. Dashboard metric updates have no runtime effect on production database connection pools.",
+                "suggested_action": "investigate"
+              }
+            ],
+            "likely_culprit_sha": "40b61e74bd9509074be0bba465fe39b722fabe23",
+            "no_culprit_reason": null
+          }
+        }
+      ]
+    }
+  }
+}
