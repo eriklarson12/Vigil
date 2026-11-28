@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml/badge.svg)](https://github.com/eriklarson12/Vigil/actions/workflows/ci.yml)
 [![Live dashboard](https://img.shields.io/badge/demo-live%20dashboard-4D8DFF)](https://tryvigil.vercel.app)
-[![Tests](https://img.shields.io/badge/tests-463%20passing-34D399)](#development--testing)
+[![Tests](https://img.shields.io/badge/tests-477%20passing-34D399)](#development--testing)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 
@@ -231,7 +231,7 @@ Every value is an environment variable; nothing is hardcoded. Defaults run the f
 ## Development & Testing
 
 ```bash
-# Backend: 324 unit tests, plus suites that need the database container
+# Backend: 338 unit tests, plus suites that need the database container
 uv run pytest                     # unit only, no services
 uv run pytest -m integration      # 65 tests against real Postgres, incl. the full pipeline
 uv run pytest -m retrieval_live   # 6 retrieval-quality tests against recorded embeddings
@@ -287,10 +287,34 @@ Commit ranking is measured against the live model, not the recorded responses CI
 
 What these numbers do and do not show:
 
-- The heuristic weights were written against these same scenarios, so 9/9 shows they fit them. It says nothing about real repositories.
+- The heuristic weights were written against these same scenarios, so 9/9 shows they fit them. It says nothing about real repositories; the backtest below does.
 - The model sees each candidate's heuristic score. It agreed with the heuristic's first pick everywhere except `dependency_bump`, where it blamed a retry decorator in the orders HTTP client over the `httpx` upgrade, at 0.90 confidence in all 3 runs.
 - `cert_expiry` has no candidate above the floor, so no call is made. `ambiguous_latency` has no culprit either, and the model names the batching commit at 0.85 every run, so its demo brief blames that commit.
 - On this evidence the model adds a written rationale per commit, not accuracy. Every scenario was written by the author of the scorer.
+
+### Backtest on real reverts
+
+A revert commit is a free label: the commit it names caused a problem someone noticed. `scripts/backtest_reverts.py` turns every revert in a repo's history into a case. The anchor is the revert's commit time. The candidates are the commits in the 48 hours before it, capped at the 50 newest as production's single page is. The revert itself, and any other revert of the same commit, is removed so the revert bonus cannot hand over the answer. Reverts are read from `This reverts commit <sha>`, from GitHub's `Reverts owner/repo#N` matched to the squash-merged PR, and from Go's `This reverts CL N` matched to the Gerrit `Reviewed-on` trailer. There is no service catalog, so path match is the same for every commit, and there are no deploys.
+
+Five public repos, picked for revert volume and a linear history before any result was seen. History runs from 2024-01-01 to 2026-11-25. Each cell is top-1 / top-3.
+
+| Repo | Cases | Scorer | Most recent | Largest diff | Random (expected) |
+|---|---|---|---|---|---|
+| `golang/go` | 47 | 9% / 17% | 11% / 23% | 9% / 19% | 4% / 13% |
+| `facebook/react` | 10 | 20% / 70% | 40% / 70% | 10% / 30% | 12% / 30% |
+| `nodejs/node` | 11 | 0% / 9% | 0% / 18% | 0% / 9% | 5% / 16% |
+| `vercel/next.js` | 94 | 13% / 22% | 14% / 26% | 5% / 19% | 3% / 9% |
+| `pytorch/pytorch` | 2,895 | 7% / 16% | 4% / 15% | 5% / 12% | 2% / 6% |
+| **Pooled** | **3,057** | **7% / 17%** | 5% / 15% | 5% / 13% | 2% / 7% |
+| **Mean of repos** | | **10% / 27%** | 14% / 30% | 6% / 18% | 5% / 15% |
+
+What this shows:
+
+- The scorer beats a random pick, but not the newest commit. Pooled, it leads the newest commit 7% to 5% at top-1, and that lead is pytorch, which is 95% of the cases. Averaged per repo, picking the newest commit wins 14% to 10%. Mean reciprocal rank tells the same story: 0.18 pooled against 0.17, and 0.25 per repo against 0.27.
+- The window loses a third of the labels before any ranking runs. Of 4,665 reverts whose target is a usable commit, 909 reverted a commit older than 48 hours and 699, nearly all in pytorch, reverted one inside 48 hours but behind the 50 newest commits. Those 34% are misses for every method above and are not in the table.
+- Without a catalog, path match adds the same 0.25 to every commit, so the score floor and the relevance gate never fire. What is tested is recency, risky files, diff size, and message signals.
+
+Caveats: the anchor is the revert time, not an alert time, which helps any recency-based method. Reverts over-represent fast, obvious breakage. There is no alert text, so the model is not evaluated. pytorch's merge bot dominates the pooled row, which is why the per-repo mean is shown beside it. The summary is in `tests/fixtures/eval/backtest.json`. Reproduce with `git clone --bare --single-branch --no-tags --shallow-since=2024-01-01 <repo url>` for each repo, then `uv run python scripts/backtest_reverts.py --repo <clone> ... --until 2026-11-25`. The script reads local git history only.
 
 Reproduce with `./scripts/safe-run.sh --llm-live uv run python scripts/eval_ranking.py`, adding `--fill` on the next day to finish runs the daily quota cut off. Per-run answers and rationales are in `tests/fixtures/eval/ranking.json`.
 
