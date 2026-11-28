@@ -1,0 +1,358 @@
+{
+ "generated_by": "scripts/backtest_reverts.py",
+ "until": "2026-11-25T00:00:00+00:00",
+ "lookback_hours": 48,
+ "max_commits": 50,
+ "pooled": {
+  "cases": 3057,
+  "scorer": {
+   "top1": {
+    "n": 210,
+    "rate": 0.0687
+   },
+   "top3": {
+    "n": 507,
+    "rate": 0.1658
+   },
+   "mrr": 0.1841
+  },
+  "most_recent": {
+   "top1": {
+    "n": 148,
+    "rate": 0.0484
+   },
+   "top3": {
+    "n": 466,
+    "rate": 0.1524
+   },
+   "mrr": 0.1664
+  },
+  "largest_diff": {
+   "top1": {
+    "n": 141,
+    "rate": 0.0461
+   },
+   "top3": {
+    "n": 383,
+    "rate": 0.1253
+   },
+   "mrr": 0.1448
+  },
+  "random_expected": {
+   "top1": 0.0223,
+   "top3": 0.0666,
+   "mrr": 0.0965
+  },
+  "median_candidates": 50
+ },
+ "macro": {
+  "repos": 5,
+  "scorer": {
+   "top1": 0.0958,
+   "top3": 0.2694,
+   "mrr": 0.2493
+  },
+  "most_recent": {
+   "top1": 0.1376,
+   "top3": 0.3034,
+   "mrr": 0.2716
+  },
+  "largest_diff": {
+   "top1": 0.0567,
+   "top3": 0.1791,
+   "mrr": 0.1943
+  },
+  "random_expected": {
+   "top1": 0.053,
+   "top3": 0.1488,
+   "mrr": 0.1672
+  }
+ },
+ "repos": {
+  "go": {
+   "head": "3fabb12ed4319bf21867d5ad5ff0032b9f21c8b1",
+   "history_start": "2024-01-03T17:21:42+00:00",
+   "reverts": 112,
+   "skipped": {
+    "label_beyond_cap": 2,
+    "label_not_on_branch": 4,
+    "label_outside_window": 56,
+    "no_reference": 3
+   },
+   "out_of_window_miss": {
+    "n": 58,
+    "rate": 0.5524
+   },
+   "summary": {
+    "cases": 47,
+    "scorer": {
+     "top1": {
+      "n": 4,
+      "rate": 0.0851
+     },
+     "top3": {
+      "n": 8,
+      "rate": 0.1702
+     },
+     "mrr": 0.2177
+    },
+    "most_recent": {
+     "top1": {
+      "n": 5,
+      "rate": 0.1064
+     },
+     "top3": {
+      "n": 11,
+      "rate": 0.234
+     },
+     "mrr": 0.236
+    },
+    "largest_diff": {
+     "top1": {
+      "n": 4,
+      "rate": 0.0851
+     },
+     "top3": {
+      "n": 9,
+      "rate": 0.1915
+     },
+     "mrr": 0.2129
+    },
+    "random_expected": {
+     "top1": 0.0436,
+     "top3": 0.1307,
+     "mrr": 0.1573
+    },
+    "median_candidates": 27
+   }
+  },
+  "react": {
+   "head": "edae846a9a17442c00429f2b15375afbfa0376c9",
+   "history_start": "2024-01-02T19:39:25+00:00",
+   "reverts": 21,
+   "skipped": {
+    "label_not_on_branch": 1,
+    "label_outside_window": 7,
+    "no_reference": 3
+   },
+   "out_of_window_miss": {
+    "n": 7,
+    "rate": 0.4118
+   },
+   "summary": {
+    "cases": 10,
+    "scorer": {
+     "top1": {
+      "n": 2,
+      "rate": 0.2
+     },
+     "top3": {
+      "n": 7,
+      "rate": 0.7
+     },
+     "mrr": 0.4546
+    },
+    "most_recent": {
+     "top1": {
+      "n": 4,
+      "rate": 0.4
+     },
+     "top3": {
+      "n": 7,
+      "rate": 0.7
+     },
+     "mrr": 0.5392
+    },
+    "largest_diff": {
+     "top1": {
+      "n": 1,
+      "rate": 0.1
+     },
+     "top3": {
+      "n": 3,
+      "rate": 0.3
+     },
+     "mrr": 0.2589
+    },
+    "random_expected": {
+     "top1": 0.1168,
+     "top3": 0.3004,
+     "mrr": 0.2801
+    },
+    "median_candidates": 14.0
+   }
+  },
+  "node": {
+   "head": "c58ccfa61777629023ceb1402b9892158dbe52b1",
+   "history_start": "2024-01-03T13:28:26+00:00",
+   "reverts": 73,
+   "skipped": {
+    "label_beyond_cap": 1,
+    "label_not_on_branch": 5,
+    "label_outside_window": 55,
+    "no_reference": 1
+   },
+   "out_of_window_miss": {
+    "n": 56,
+    "rate": 0.8358
+   },
+   "summary": {
+    "cases": 11,
+    "scorer": {
+     "top1": {
+      "n": 0,
+      "rate": 0.0
+     },
+     "top3": {
+      "n": 1,
+      "rate": 0.0909
+     },
+     "mrr": 0.1403
+    },
+    "most_recent": {
+     "top1": {
+      "n": 0,
+      "rate": 0.0
+     },
+     "top3": {
+      "n": 2,
+      "rate": 0.1818
+     },
+     "mrr": 0.1541
+    },
+    "largest_diff": {
+     "top1": {
+      "n": 0,
+      "rate": 0.0
+     },
+     "top3": {
+      "n": 1,
+      "rate": 0.0909
+     },
+     "mrr": 0.1693
+    },
+    "random_expected": {
+     "top1": 0.0519,
+     "top3": 0.1556,
+     "mrr": 0.1816
+    },
+    "median_candidates": 20
+   }
+  },
+  "next.js": {
+   "head": "5c70673b0546b0210e8d0b22ab605d7359e9f9d0",
+   "history_start": "2024-01-02T08:44:46+00:00",
+   "reverts": 222,
+   "skipped": {
+    "label_is_a_revert": 11,
+    "label_not_on_branch": 17,
+    "label_outside_window": 36,
+    "no_reference": 64
+   },
+   "out_of_window_miss": {
+    "n": 36,
+    "rate": 0.2769
+   },
+   "summary": {
+    "cases": 94,
+    "scorer": {
+     "top1": {
+      "n": 12,
+      "rate": 0.1277
+     },
+     "top3": {
+      "n": 21,
+      "rate": 0.2234
+     },
+     "mrr": 0.2535
+    },
+    "most_recent": {
+     "top1": {
+      "n": 13,
+      "rate": 0.1383
+     },
+     "top3": {
+      "n": 24,
+      "rate": 0.2553
+     },
+     "mrr": 0.268
+    },
+    "largest_diff": {
+     "top1": {
+      "n": 5,
+      "rate": 0.0532
+     },
+     "top3": {
+      "n": 18,
+      "rate": 0.1915
+     },
+     "mrr": 0.1888
+    },
+    "random_expected": {
+     "top1": 0.0313,
+     "top3": 0.0939,
+     "mrr": 0.1236
+    },
+    "median_candidates": 38.0
+   }
+  },
+  "pytorch": {
+   "head": "b464ce3b857369cab3b15b3bfa6ec73fda80c157",
+   "history_start": "2024-01-02T05:38:58+00:00",
+   "reverts": 4368,
+   "skipped": {
+    "label_beyond_cap": 696,
+    "label_not_on_branch": 5,
+    "label_outside_window": 755,
+    "no_reference": 13,
+    "window_before_history": 4
+   },
+   "out_of_window_miss": {
+    "n": 1451,
+    "rate": 0.3339
+   },
+   "summary": {
+    "cases": 2895,
+    "scorer": {
+     "top1": {
+      "n": 192,
+      "rate": 0.0663
+     },
+     "top3": {
+      "n": 470,
+      "rate": 0.1623
+     },
+     "mrr": 0.1806
+    },
+    "most_recent": {
+     "top1": {
+      "n": 126,
+      "rate": 0.0435
+     },
+     "top3": {
+      "n": 422,
+      "rate": 0.1458
+     },
+     "mrr": 0.1607
+    },
+    "largest_diff": {
+     "top1": {
+      "n": 131,
+      "rate": 0.0453
+     },
+     "top3": {
+      "n": 352,
+      "rate": 0.1216
+     },
+     "mrr": 0.1417
+    },
+    "random_expected": {
+     "top1": 0.0212,
+     "top3": 0.0635,
+     "mrr": 0.0936
+    },
+    "median_candidates": 50
+   }
+  }
+ }
+}
