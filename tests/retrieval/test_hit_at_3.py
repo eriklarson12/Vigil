@@ -15,6 +15,10 @@ rank@1 exists because hit@3 alone is blind to the failure actually observed in
 production: an unrelated runbook outranking the right one while both sit in the
 top 3. Five of the seven runbooks are tagged `checkout`, so TAG_BOOST cannot
 separate them.
+
+The ablation (roadmap R20) prints the same two numbers for each arm alone, for the
+fusion without the tag boost, and for production. It reports and gates nothing: the
+gates above hold the production configuration only. The README table is its output.
 """
 
 import json
@@ -27,7 +31,7 @@ from vigil.config import get_settings
 from vigil.db.pool import apply_migrations, create_pool, open_pool_with_retry
 from vigil.rag.chunker import chunk_markdown
 from vigil.rag.embed import vec_literal
-from vigil.rag.retrieve import KEYWORD_TSQUERY, build_query_text, fused_rows
+from vigil.rag.retrieve import KEYWORD_TSQUERY, TAG_BOOST, build_query_text, fused_rows
 
 ROOT = pathlib.Path(__file__).parent.parent.parent
 FIXTURES = ROOT / "tests" / "fixtures" / "embeddings"
@@ -56,6 +60,14 @@ RANK_AT_1_MIN = 9
 # Diagnostic only: when a runbook misses the production window, re-query deep enough
 # to report where it actually landed instead of just "absent".
 DEEP_FETCH = 50
+
+# (label, fused_rows knobs). The last row is production.
+ABLATION = [
+    ("vector only", {"arms": "vector", "tag_boost": 1.0}),
+    ("keyword only", {"arms": "keyword", "tag_boost": 1.0}),
+    ("hybrid (RRF)", {"arms": "both", "tag_boost": 1.0}),
+    ("hybrid + tag boost", {"arms": "both", "tag_boost": TAG_BOOST}),
+]
 
 _fixtures_present = (FIXTURES / "chunks.json").exists() and (FIXTURES / "queries.json").exists()
 
@@ -137,12 +149,14 @@ def _distinct_slugs(rows: list[dict]) -> list[str]:
     return seen
 
 
-async def _rank_of(pool, scenario: str, recorded: dict, fetch: int | None = None) -> tuple[int, list[str]]:
+async def _rank_of(
+    pool, scenario: str, recorded: dict, fetch: int | None = None, **knobs
+) -> tuple[int, list[str]]:
     """Return (1-based rank of the expected runbook, distinct slugs in fused order).
 
     Rank is 0 when the runbook does not appear at the given depth.
     """
-    kwargs = {"fetch": fetch} if fetch else {}
+    kwargs = dict(knobs, fetch=fetch) if fetch else knobs
     rows = await fused_rows(
         pool, recorded["vector"], recorded["query_text"], recorded["service"], **kwargs
     )
@@ -197,6 +211,29 @@ async def test_retrieval_hits_the_right_runbook(pool):
 
     assert hits >= HIT_AT_3_MIN, f"hit@3 {hits}/{total} < {HIT_AT_3_MIN}\n" + "\n".join(report)
     assert firsts >= RANK_AT_1_MIN, f"rank@1 {firsts}/{total} < {RANK_AT_1_MIN}\n" + "\n".join(report)
+
+
+async def test_ablation_by_arm(pool):
+    queries = _load("queries")["vectors"]
+    total = len(EXPECTED_RUNBOOK)
+    table, misses = [], []
+    ranks_by_config = {}
+    for label, knobs in ABLATION:
+        ranks = {s: (await _rank_of(pool, s, queries[s], **knobs))[0] for s in sorted(EXPECTED_RUNBOOK)}
+        ranks_by_config[label] = ranks
+        hits = sum(1 <= r <= 3 for r in ranks.values())
+        firsts = sum(r == 1 for r in ranks.values())
+        table.append(f"  {label:20} hit@3 {hits:2}/{total}  rank@1 {firsts:2}/{total}")
+        misses += [f"  {label:20} {s:20} rank {r or '-'}" for s, r in ranks.items() if r != 1]
+
+    print("\nretrieval ablation")
+    print("\n".join(table))
+    print("not first:")
+    print("\n".join(misses))
+
+    # The row labelled production must be what production runs.
+    production = {s: (await _rank_of(pool, s, queries[s]))[0] for s in sorted(EXPECTED_RUNBOOK)}
+    assert ranks_by_config[ABLATION[-1][0]] == production
 
 
 async def test_keyword_arm_matches_every_scenario_query(pool):
